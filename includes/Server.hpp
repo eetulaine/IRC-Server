@@ -6,6 +6,7 @@
 #include <netdb.h>      //-> needed for addrinfo
 #include <cstring>		//-> needed for memset etc.
 #include <unistd.h>		//-> needed for close etc.
+#include <fcntl.h>		//-> needed for fcntl
 
 class Server {
 
@@ -19,8 +20,12 @@ class Server {
 		Server(int port, std::string password);
 		~Server();
 
+		void initAddrInfo(); 		//-> init addrinfo struct settings
+		void createAddrInfo(); 		//-> call getaddrinfo
+		void createServSocket(); 	//-> create socket
+		void setNonBlocking(); 		//-> get & set socket status flags using fcntl
+
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
-
 };
