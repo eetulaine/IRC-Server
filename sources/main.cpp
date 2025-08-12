@@ -14,27 +14,30 @@ bool isPasswordValid(const std::string &password)
 	return (std::regex_match(password, passPattern));
 }
 
-void argsValidation(int argc, char **argv)
+int portValidation(const std::string &_port)
 {
-	if (argc != 3)
-		throw std::runtime_error("Invalid number of arguments");
 
-	int port = std::stoi(static_cast<std::string>(argv[1]));
+	int port = std::stoi(static_cast<std::string>(_port));
 
 	if (port < 6665 || port > 6669) // need to check actual port range
 		throw std::runtime_error("Invalid listening port range(try 6665-6669)");
+	return (port);
 	// if server only allow one port, need to validation in the above method accordingly
 
-	if (!isPasswordValid(argv[2]))
-		throw std::runtime_error("Invalid password");
+
 }
 
 int main(int argc, char **argv)
 {
 	try
 	{
-		argsValidation(argc, argv);
-		std::cout << "ValidationSuccess" << std::endl;
+		if (argc != 3)
+			throw std::runtime_error("Invalid number of arguments");
+
+		int port_ = portValidation(argv[1]);
+
+		if (!isPasswordValid(argv[2]))
+			throw std::runtime_error("Invalid password");
 	}
 	catch(const std::exception& e)
 	{
