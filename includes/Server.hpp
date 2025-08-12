@@ -20,10 +20,10 @@ class Server {
 		Server(int port, std::string password);
 		~Server();
 
-		void initAddrInfo();
-		void createAddrInfo();
-		void createServSocket();
-		void setNonBlocking();
+		void initAddrInfo(); 		//-> init addrinfo struct settings
+		void createAddrInfo(); 		//-> call getaddrinfo
+		void createServSocket(); 	//-> create socket
+		void setNonBlocking(); 		//-> get & set socket status flags using fcntl
 
 		int	getPort() const;
 		int getServerSocket() const;
