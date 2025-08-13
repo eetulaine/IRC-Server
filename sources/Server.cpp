@@ -50,6 +50,50 @@ void Server::setNonBlocking() {
 		throw std::runtime_error("fcntl failed to set non-blocking");
 }
 
+void Server::startServer()
+{
+	int epollFd = epoll_create1(1); // check later if we need this EPOLL_CLOEXEC flag(1)
+	if (epollFd < 0) {
+		throw std::runtime_error("epoll fd creating failed");
+	}
+
+	struct epoll_event serverEvent; // epoll event for Listening socket (new connections monitoring)
+	serverEvent.events = EPOLLIN;
+	serverEvent.data.fd = serverSocket_;
+	if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverEvent.data.fd, &serverEvent) < 0) {
+		close (epollFd);
+		throw std::runtime_error("Adding server socket to epoll failed");
+	}
+
+	const int MAX_EVENTS = 42; // max events to handle at once
+	struct epoll_event epEventList[MAX_EVENTS];
+
+	while(true) {
+		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
+		// handle SIGINT;
+		if (epActiveSockets < 0) {
+			throw std::runtime_error("Epoll waiting failed");
+		}
+		if (epActiveSockets > 0) {
+			for (int i = 0; i < epActiveSockets; i++)
+			{
+				if (epEventList[i].data.fd == serverSocket_) {
+					// method to receive new connection;
+				}
+
+				else if (epEventList[i].events & EPOLLIN) {
+					// method to receive data from client;
+				}
+
+				else if (epEventList[i].events & EPOLLOUT) {
+					// method to send data to specific client;
+				}
+
+			}
+		}
+	}
+}
+
 // we set socket option for all sockets (SOL_SOCKET) to SO_REUSEADDR which enables us to reuse local addresses
 // to avoid "address already in use" error
 void Server::setSocketOption() {

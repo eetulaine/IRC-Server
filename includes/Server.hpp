@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <sys/socket.h> //-> needed for socket
+#include <sys/epoll.h> //-> needed for epoll
 #include <netdb.h>      //-> needed for addrinfo
 #include <cstring>		//-> needed for memset etc.
 #include <unistd.h>		//-> needed for close etc.
@@ -15,6 +16,7 @@ class Server {
 		std::string password_;
 		int serverSocket_;
 		struct addrinfo hints_, *res_;
+		//static bool isRunning_; // change the value to true when it start
 
 		// private member functions used for the server setup within the Server constructor
 		void initAddrInfo(); 		//-> init addrinfo struct settings
@@ -28,6 +30,8 @@ class Server {
 	public:
 		Server(int port, std::string password);
 		~Server();
+  
+    void startServer();			//-> The loop, that will keep the server running and do diff actions
 
 		int	getPort() const;
 		int getServerSocket() const;
