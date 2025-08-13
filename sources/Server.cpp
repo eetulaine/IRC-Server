@@ -67,11 +67,11 @@ void Server::startServer()
 					// method to receive new connection;
 				}
 
-				else if (epEventList[i].events && EPOLLIN) {
+				else if (epEventList[i].events & EPOLLIN) {
 					// method to receive data from client;
 				}
 
-				else if (epEventList[i].events && EPOLLOUT) {
+				else if (epEventList[i].events & EPOLLOUT) {
 					// method to send data to specific client;
 				}
 
