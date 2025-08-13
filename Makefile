@@ -1,7 +1,7 @@
 NAME 		:= ircserv
 
 CC			:= c++
-FLAGS		:= -Wall -Wextra -Werror
+FLAGS		:= -Wall -Wextra -Werror -std=c++11
 
 INCL 		:= includes/
 SRC_PATH 	:= sources/
