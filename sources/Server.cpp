@@ -1,4 +1,4 @@
-#include "Server.hpp"
+#include "../includes/Server.hpp"
 
 // add default settings to addrinfo struct
 void Server::initAddrInfo() {
@@ -54,6 +54,10 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	setSocketOption();
 	bindSocket();
 	initListen();
+	std::cout << "\n=== SERVER CREATED ===\n";
+	std::cout << "Port: " << port_ << "\n";
+	std::cout << "Pass: " << password_ << "\n";
+	std::cout << "Sock: " << serverSocket_ << "\n\n";
 }
 
 Server::~Server() {
