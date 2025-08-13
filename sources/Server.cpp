@@ -1,4 +1,28 @@
-#include "Server.hpp"
+#include "../includes/Server.hpp"
+
+Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
+	initAddrInfo();
+	createAddrInfo();
+	createServSocket();
+	setNonBlocking();
+	setSocketOption();
+	bindSocket();
+	initListen();
+	std::cout << "\n=== SERVER CREATED ===\n";
+	std::cout << "Port: " << port_ << "\n";
+	std::cout << "Pass: " << password_ << "\n";
+	std::cout << "Sock: " << serverSocket_ << "\n\n";
+}
+
+Server::~Server() {
+	if (serverSocket_ >= 0)
+		close(serverSocket_);
+	if (res_)
+		freeaddrinfo(res_);
+}
+
+// PRIVATE MEMBER FUNCTIONS USED WITHIN THE SERVER CONSTRUCTOR
+// ===========================================================
 
 // add default settings to addrinfo struct
 void Server::initAddrInfo() {
@@ -46,22 +70,8 @@ void Server::initListen() {
 		throw(std::runtime_error("failed to init listen()"));
 }
 
-Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
-	initAddrInfo();
-	createAddrInfo();
-	createServSocket();
-	setNonBlocking();
-	setSocketOption();
-	bindSocket();
-	initListen();
-}
-
-Server::~Server() {
-	if (serverSocket_ >= 0)
-		close(serverSocket_);
-	if (res_)
-		freeaddrinfo(res_);
-}
+// ACCESSORS
+// =========
 
 int Server::getPort() const {
 	return port_;
