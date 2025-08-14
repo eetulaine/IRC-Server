@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <regex>
 #include "../includes/Server.hpp"
+#include "../includes/macros.hpp"
 //#include <exception>
 
 bool isPasswordValid(const std::string &password)
@@ -37,11 +38,12 @@ int main(int argc, char **argv)
 		if (!isPasswordValid(argv[2]))
 			throw std::runtime_error("Invalid password");
 		Server ircserv(port, argv[2]);
+		ircserv.startServer();
 
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << "\033[0;31m" << "[Error] " << "\033[0;37m";
+		std::cerr << RED "[Error] " END_COLOR;
 		std::cerr << e.what() << std::endl;
 		return (1);
 	}
