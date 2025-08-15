@@ -1,5 +1,4 @@
 #include "../includes/Server.hpp"
-#include "../includes/macros.hpp"
 
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();

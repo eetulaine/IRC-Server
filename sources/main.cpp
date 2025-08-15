@@ -3,7 +3,6 @@
 #include <cstdlib>
 #include <regex>
 #include "../includes/Server.hpp"
-#include "../includes/macros.hpp"
 //#include <exception>
 
 bool isPasswordValid(const std::string &password)
