@@ -9,6 +9,7 @@
 #include <unistd.h>		//-> needed for close etc.
 #include <fcntl.h>		//-> needed for fcntl
 #include "../includes/macros.hpp"
+#include <arpa/inet.h> // Client IP  log "inet_ntop()"
 
 class Server {
 
@@ -28,11 +29,17 @@ class Server {
 		void bindSocket();			//-> bind the socket to the address
 		void initListen();			//-> prepare to listen for incoming connections
 
+		// dependant methods for "ServerActivity"
+		void acceptNewClient(int epollFd); //-> accept new client request
+		std::string getClientIP(struct sockaddr_in clientSocAddr);
+
 	public:
 		Server(int port, std::string password);
 		~Server();
-  
-    void startServer();			//-> The loop, that will keep the server running and do diff actions
+
+
+		// ServerActivity: activity response loop for running server
+		void startServer();			//-> The loop, that will keep the server running and do diff actions
 
 		int	getPort() const;
 		int getServerSocket() const;

@@ -1,5 +1,7 @@
 #include "../includes/Server.hpp"
 
+
+
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
 	createAddrInfo();
@@ -27,7 +29,7 @@ Server::~Server() {
 // add default settings to addrinfo struct
 void Server::initAddrInfo() {
 	std::memset(&hints_, 0, sizeof(hints_));
-	hints_.ai_family = AF_UNSPEC;       // Allow IPv4 or IPv6
+	hints_.ai_family = AF_INET;       // Allow IPv4
 	hints_.ai_socktype = SOCK_STREAM;   // TCP socket
 	hints_.ai_flags = AI_PASSIVE;       // suitable for server use with bind()
 }
@@ -53,11 +55,11 @@ void Server::setNonBlocking() {
 void Server::startServer()
 {
 	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
-	std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
+  std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
+
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
 	}
-
 	struct epoll_event serverEvent; // epoll event for Listening socket (new connections monitoring)
 	serverEvent.events = EPOLLIN;
 	serverEvent.data.fd = serverSocket_;
@@ -72,16 +74,19 @@ void Server::startServer()
 	std::cout << GREEN "Waiting for events...\n" END_COLOR;
 	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
+		std::cout << "Active events outside: " << epActiveSockets << std::endl;
+
 		// handle SIGINT;
 		std::cout << epActiveSockets << " active sockets\n";
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
 		if (epActiveSockets > 0) {
-			for (int i = 0; i < epActiveSockets; i++)
+			for (int i = 0; i < epActiveSockets; ++i)
 			{
 				if (epEventList[i].data.fd == serverSocket_) {
-					// method to receive new connection;
+					std::cout << "server Socket END" << std::endl;
+					acceptNewClient(epollFd);
 				}
 
 				else if (epEventList[i].events & EPOLLIN) {
@@ -91,10 +96,61 @@ void Server::startServer()
 				else if (epEventList[i].events & EPOLLOUT) {
 					// method to send data to specific client;
 				}
-
+				usleep(10000); // use for debugging -remove later***
 			}
 		}
 		std::cout << YELLOW "still waiting...\n" END_COLOR;
+	}
+}
+
+std::string Server::getClientIP(struct sockaddr_in clientSocAddr)
+{
+	char clientIP[INET_ADDRSTRLEN]; // if needed convert clientIP to std::string "std::string(clientIP)"
+		 // logging client IP | Do we need to log?? or only IP
+	if (!inet_ntop(AF_INET, &clientSocAddr.sin_addr, clientIP, sizeof(clientIP))) {
+		return ("");
+	}
+	//std::cout << "Client IP from GET Method: " << clientIP << std::endl; // remove later***
+	return (std::string(clientIP));
+}
+
+void Server::acceptNewClient(int epollFd)
+{
+	//std::cout << "Inside Accept" << std::endl;
+	struct  sockaddr_in clientSocAddr;
+	socklen_t clientSocLen = sizeof(clientSocAddr);
+
+	int clientFd = accept(serverSocket_, (struct sockaddr*)&clientSocAddr, &clientSocLen);
+	if  (clientFd < 0) {
+		throw std::runtime_error("Client accept() failed");
+		// should exit or return to main/server loop???
+	}
+	else {
+		//usleep(10000);
+		//std::cout << "Client FD :" << clientFd << std::endl; // remove later***
+		if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) { // Make client non-blocking
+			close(clientFd);
+			throw std::runtime_error("fcntl() failed for client");
+		}
+		//std::cout << "Client is now non blocking" << std::endl; std::cout << "Client IP from NEWClient: " << clientIP << std::endl;
+		std::string clientIP = getClientIP(clientSocAddr);
+		if (clientIP.empty()) {
+			close(clientFd);
+			throw std::runtime_error("Failed to retrieve client IP");
+		}
+
+		//std::cout << "Client IP from NEWClient: " << clientIP << std::endl;  // remove later***
+		// Prepare epoll_event for this client
+		struct epoll_event clientEvent;
+		clientEvent.events = EPOLLIN; // start listening for read events
+		clientEvent.data.fd = clientFd;
+
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, clientFd, &clientEvent) < 0) {
+			close(clientFd);
+			throw std::runtime_error("epoll_ctl() failed for client");
+		}
+		//std::cout << "Client added to epoll event" << std::endl; // remove later***
+		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
 	}
 }
 
