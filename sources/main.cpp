@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << "\033[0;31m" << "[Error] " << "\033[0;37m";
+		std::cerr << RED "[Error] " END_COLOR;
 		std::cerr << e.what() << std::endl;
 		return (1);
 	}

@@ -3,13 +3,13 @@
 #include <string>
 #include <iostream>
 #include <sys/socket.h> //-> needed for socket
-#include <sys/epoll.h> //-> needed for epoll
+#include <sys/epoll.h>	//-> needed for epoll
 #include <netdb.h>      //-> needed for addrinfo
 #include <cstring>		//-> needed for memset etc.
 #include <unistd.h>		//-> needed for close etc.
 #include <fcntl.h>		//-> needed for fcntl
+#include "../includes/macros.hpp"
 #include <arpa/inet.h> // Client IP  log "inet_ntop()"
-
 
 class Server {
 
@@ -29,8 +29,8 @@ class Server {
 		void bindSocket();			//-> bind the socket to the address
 		void initListen();			//-> prepare to listen for incoming connections
 
-		//-> dependant methods for "ServerActivity"
-		void acceptNewClient(int epollFd); // accept new client request
+		// dependant methods for "ServerActivity"
+		void acceptNewClient(int epollFd); //-> accept new client request
 		std::string getClientIP(struct sockaddr_in clientSocAddr);
 
 	public:
@@ -38,7 +38,7 @@ class Server {
 		~Server();
 
 
-		//-> ServerActivity: activity response loop for running server
+		// ServerActivity: activity response loop for running server
 		void startServer();			//-> The loop, that will keep the server running and do diff actions
 
 		int	getPort() const;

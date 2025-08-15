@@ -10,7 +10,7 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	setSocketOption();
 	bindSocket();
 	initListen();
-	std::cout << "\n=== SERVER CREATED ===\n";
+	std::cout << GREEN "\n=== SERVER CREATED ===\n" END_COLOR;
 	std::cout << "Port: " << port_ << "\n";
 	std::cout << "Pass: " << password_ << "\n";
 	std::cout << "Sock: " << serverSocket_ << "\n\n";
@@ -55,6 +55,8 @@ void Server::setNonBlocking() {
 void Server::startServer()
 {
 	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
+  std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
+
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
 	}
@@ -69,11 +71,13 @@ void Server::startServer()
 	const int MAX_EVENTS = 42; // max events to handle at once
 	struct epoll_event epEventList[MAX_EVENTS];
 
+	std::cout << GREEN "Waiting for events...\n" END_COLOR;
 	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 		std::cout << "Active events outside: " << epActiveSockets << std::endl;
 
 		// handle SIGINT;
+		std::cout << epActiveSockets << " active sockets\n";
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
@@ -95,6 +99,7 @@ void Server::startServer()
 				usleep(10000); // use for debugging -remove later***
 			}
 		}
+		std::cout << YELLOW "still waiting...\n" END_COLOR;
 	}
 }
 
@@ -154,7 +159,7 @@ void Server::acceptNewClient(int epollFd)
 void Server::setSocketOption() {
 	int opt = 1;
 	if (setsockopt(serverSocket_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
-		throw std::runtime_error("failed to set socket option SO_REUSEADDR)");
+		throw std::runtime_error("failed to set socket option: SO_REUSEADDR");
 }
 
 // we bind the socket to the address
