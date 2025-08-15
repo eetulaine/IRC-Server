@@ -3,11 +3,12 @@
 #include <string>
 #include <iostream>
 #include <sys/socket.h> //-> needed for socket
-#include <sys/epoll.h> //-> needed for epoll
+#include <sys/epoll.h>	//-> needed for epoll
 #include <netdb.h>      //-> needed for addrinfo
 #include <cstring>		//-> needed for memset etc.
 #include <unistd.h>		//-> needed for close etc.
 #include <fcntl.h>		//-> needed for fcntl
+#include "../includes/macros.hpp"
 
 class Server {
 
