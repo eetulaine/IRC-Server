@@ -37,6 +37,7 @@ int main(int argc, char **argv)
 		if (!isPasswordValid(argv[2]))
 			throw std::runtime_error("Invalid password");
 		Server ircserv(port, argv[2]);
+		ircserv.startServer();
 
 	}
 	catch(const std::exception& e)
