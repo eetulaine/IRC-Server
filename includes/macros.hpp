@@ -5,3 +5,6 @@
 #define RED			"\033[0;31m"
 #define YELLOW		"\033[93m"
 #define END_COLOR	"\033[0m"
+
+#define MAX_CHANNELS 42
+//#define MAX_EVENTS 42
