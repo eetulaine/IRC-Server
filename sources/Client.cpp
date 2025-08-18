@@ -3,12 +3,20 @@
 Client::Client(int clientFD, std::string clientIP) :
 	clientFD_(clientFD), nickname_(""), username_(""), hostname_(clientIP), realName_(""), password_(""), isAuthenticated_(false) {
 	std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
+	std::cout << "clientFD: " << clientFD_ << "\n";
+	std::cout << "hostname: " << hostname_ << "\n";
 }
 
-Client::~Client() {}
+Client::~Client() {
+	std::cout << RED "CLIENT DESTROYED\n" END_COLOR;
+}
 
 // PUBLIC MEMBER FUNCTIONS
 // =======================
+
+ssize_t Client::receiveData(char* buffer, size_t bufferSize) {
+    return recv(clientFD_, buffer, bufferSize, MSG_DONTWAIT);
+}
 
 // PRIVATE MEMBER FUNCTIONS
 // ========================
