@@ -19,7 +19,7 @@ LOADING.......(1%)
 
 
 ### 🤝 Contributors
-[Eetu](https://github.com/eetuhki)
+[Eetu](https://github.com/eetulaine)
 
 [Hager](https://github.com/imhaqer)
 
