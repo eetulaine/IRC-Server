@@ -8,14 +8,30 @@ Client::Client(int clientFD, std::string clientIP) :
 }
 
 Client::~Client() {
+	close(clientFD_);
 	std::cout << RED "CLIENT DESTROYED\n" END_COLOR;
 }
 
 // PUBLIC MEMBER FUNCTIONS
 // =======================
 
-ssize_t Client::receiveData(char* buffer, size_t bufferSize) {
-    return recv(clientFD_, buffer, bufferSize, MSG_DONTWAIT);
+int Client::receiveData() {
+	char buffer[BUF_SIZE];
+
+	ssize_t bytesRead = recv(clientFD_, buffer, BUF_SIZE, MSG_DONTWAIT);
+	std::cout << "bytesRead: " << bytesRead << "\n";
+    if (bytesRead > 0) {
+		std::cout << YELLOW "DATA RECEIVED FROM CLIENT\n" END_COLOR;
+		std::cout << "BUFFER: " << buffer << "\n";
+		return SUCCESS;
+	}
+	else if (!bytesRead) {
+		std::cout << "Client " << clientFD_ << " disconnected." << std::endl;
+	}
+	else {
+		std::cerr << "recv failed\n";
+	}
+	return FAIL;
 }
 
 // PRIVATE MEMBER FUNCTIONS

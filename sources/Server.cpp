@@ -67,7 +67,6 @@ void Server::startServer()
 		throw std::runtime_error("Adding server socket to epoll failed");
 	}
 
-	const int MAX_EVENTS = 42; // max events to handle at once
 	struct epoll_event epEventList[MAX_EVENTS];
 
 	std::cout << GREEN "Waiting for events...\n" END_COLOR;
@@ -104,25 +103,10 @@ void Server::startServer()
 }
 
 void Server::receiveData(int currentFD, int epollFD) {
-	char buffer[512];
 	std::unique_ptr<Client>& client = clients_.at(currentFD);
-	ssize_t bytesRead = client->receiveData(buffer, sizeof(buffer));
-
-	std::cout << "bytesRead: " << bytesRead << "\n";
-	if (bytesRead > 0) {
-		std::cout << YELLOW "DATA RECEIVED FROM CLIENT\n" END_COLOR;
-		std::cout << "BUFFER: " << buffer << "\n";
-		// Successfully read data
-		// Process the data in the buffer and append to client's message queue
-	}
-	else if (!bytesRead) {
-		std::cout << "Client " << currentFD << " disconnected." << std::endl;
-    	// Clean up the client and remove from epoll and map
+	if (client->receiveData() == FAIL) {
 		clients_.erase(currentFD);
 		epoll_ctl(epollFD, EPOLL_CTL_DEL, currentFD, NULL);
-	}
-	else {
-		// Error reading from socket
 	}
 }
 
