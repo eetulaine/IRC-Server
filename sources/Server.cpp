@@ -1,6 +1,5 @@
 #include "../includes/Server.hpp"
-
-
+#include "../includes/Client.hpp"
 
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
@@ -74,10 +73,10 @@ void Server::startServer()
 	std::cout << GREEN "Waiting for events...\n" END_COLOR;
 	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
-		std::cout << "Active events outside: " << epActiveSockets << std::endl;
+		//std::cout << "Active events outside: " << epActiveSockets << std::endl;
 
 		// handle SIGINT;
-		std::cout << epActiveSockets << " active sockets\n";
+		//std::cout << epActiveSockets << " active sockets\n";
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
@@ -91,6 +90,7 @@ void Server::startServer()
 
 				else if (epEventList[i].events & EPOLLIN) {
 					// method to receive data from client;
+					receiveData(epEventList[i].data.fd, epollFd);
 				}
 
 				else if (epEventList[i].events & EPOLLOUT) {
@@ -99,7 +99,30 @@ void Server::startServer()
 				usleep(10000); // use for debugging -remove later***
 			}
 		}
-		std::cout << YELLOW "still waiting...\n" END_COLOR;
+		//std::cout << YELLOW "still waiting...\n" END_COLOR;
+	}
+}
+
+void Server::receiveData(int currentFD, int epollFD) {
+	char buffer[512];
+	std::unique_ptr<Client>& client = clients_.at(currentFD);
+	ssize_t bytesRead = client->receiveData(buffer, sizeof(buffer));
+
+	std::cout << "bytesRead: " << bytesRead << "\n";
+	if (bytesRead > 0) {
+		std::cout << YELLOW "DATA RECEIVED FROM CLIENT\n" END_COLOR;
+		std::cout << "BUFFER: " << buffer << "\n";
+		// Successfully read data
+		// Process the data in the buffer and append to client's message queue
+	}
+	else if (!bytesRead) {
+		std::cout << "Client " << currentFD << " disconnected." << std::endl;
+    	// Clean up the client and remove from epoll and map
+		clients_.erase(currentFD);
+		epoll_ctl(epollFD, EPOLL_CTL_DEL, currentFD, NULL);
+	}
+	else {
+		// Error reading from socket
 	}
 }
 
@@ -151,6 +174,7 @@ void Server::acceptNewClient(int epollFd)
 		}
 		//std::cout << "Client added to epoll event" << std::endl; // remove later***
 		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
+		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP);
 	}
 }
 
