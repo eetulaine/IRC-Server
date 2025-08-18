@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <sys/socket.h>
 #include "../includes/macros.hpp"
 
 class Client {
@@ -25,6 +26,7 @@ class Client {
 		~Client();
 
 		// PUBLIC MEMBER FUNCTIONS
+		ssize_t receiveData(char* buffer, size_t bufferSize);
 
 		// ACCESSORS
 		int getClientFD() const;
