@@ -88,7 +88,6 @@ void Server::startServer()
 				}
 
 				else if (epEventList[i].events & EPOLLIN) {
-					// method to receive data from client;
 					receiveData(epEventList[i].data.fd, epollFd);
 				}
 
@@ -103,10 +102,14 @@ void Server::startServer()
 }
 
 void Server::receiveData(int currentFD, int epollFD) {
-	std::unique_ptr<Client>& client = clients_.at(currentFD);
+	std::unique_ptr<Client>& client = clients_.at(currentFD); //get current Client from map
 	if (client->receiveData() == FAIL) {
 		clients_.erase(currentFD);
 		epoll_ctl(epollFD, EPOLL_CTL_DEL, currentFD, NULL);
+		return;
+	}
+	if (client->getBuffer().find("\r\n") != std::string::npos) {
+		// start parsing
 	}
 }
 
