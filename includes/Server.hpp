@@ -8,8 +8,11 @@
 #include <cstring>		//-> needed for memset etc.
 #include <unistd.h>		//-> needed for close etc.
 #include <fcntl.h>		//-> needed for fcntl
+#include <arpa/inet.h>	// Client IP  log "inet_ntop()"
+#include <map>
+#include <memory>		// for std::unique_ptr
 #include "../includes/macros.hpp"
-#include <arpa/inet.h> // Client IP  log "inet_ntop()"
+#include "../includes/Client.hpp"
 
 class Server {
 
@@ -31,7 +34,9 @@ class Server {
 
 		// dependant methods for "ServerActivity"
 		void acceptNewClient(int epollFd); //-> accept new client request
+		void receiveData(int currentFD, int epollFD);
 		std::string getClientIP(struct sockaddr_in clientSocAddr);
+		std::map<int, std::unique_ptr<Client>> clients_;
 
 	public:
 		Server(int port, std::string password);
