@@ -11,5 +11,6 @@
 	  "source=${localWorkspaceFolder},target=/workspace,type=bind"
 	],
 	"remoteUser": "root",
-	"workspaceFolder": "/workspace"
+	"workspaceFolder": "/workspace",
+	"runArgs": ["--name", "IRC_Dev"]
   }
