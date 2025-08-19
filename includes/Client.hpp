@@ -4,8 +4,11 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <cstdint> // 'uint32_t'
 #include "../includes/macros.hpp"
+#include "../includes/server.hpp"
 
+class Server;
 class Client {
 
 	private:
@@ -28,6 +31,7 @@ class Client {
 
 		// PUBLIC MEMBER FUNCTIONS
 		int receiveData();
+		bool sendData();
 
 		// ACCESSORS
 		int getClientFD() const;
@@ -36,10 +40,15 @@ class Client {
 		std::string getUsername() const;
 		std::string getRealName() const;
 		std::string getPassword() const;
+		std::string getReadBuffer() const;
+
 
 		void setHostname(std::string hostname);
 		void setNickname(std::string nickname);
 		void setUsername(std::string username);
 		void setRealName(std::string realName);
 		void setPassword(std::string password);
+
+		void appendSendBuffer(std::string sendMsg, int epollFd);
+		void epollEventChange(uint32_t eventType, int epollFd); // any better name??
 };

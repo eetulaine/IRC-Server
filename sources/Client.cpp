@@ -23,6 +23,7 @@ int Client::receiveData() {
     if (bytesRead > 0) {
 		std::cout << YELLOW "DATA RECEIVED FROM CLIENT\n" END_COLOR;
 		std::cout << "BUFFER: " << buffer << "\n";
+		this->readBuffer_ = std::string(buffer);
 		return SUCCESS;
 	}
 	else if (!bytesRead) {
@@ -32,6 +33,43 @@ int Client::receiveData() {
 		std::cerr << "recv failed\n";
 	}
 	return FAIL;
+}
+
+
+bool Client::sendData() {
+	if (sendBuffer_.empty())
+		return (SUCCESS);
+
+	int sentByte = send(this->clientFD_, this->sendBuffer_.c_str(), this->sendBuffer_.size(), MSG_DONTWAIT);
+	if (sentByte < 0 && errno != EWOULDBLOCK && errno != EAGAIN)
+		return (FAIL);
+	this->sendBuffer_.erase(0, sentByte);
+	if (sendBuffer_.empty()) {
+		// change event
+	}
+	return (SUCCESS);
+}
+
+// After successfull msg process method will call appendSendBuffer to create EPOLLOUT event
+void Client::appendSendBuffer(std::string sendMsg, int epollFd) {
+	this->sendBuffer_.append(sendMsg);
+	std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
+	epollEventChange(EPOLLOUT, epollFd);
+}
+
+// Method to change EPOLL IN/OUT event depending on client request
+void Client::epollEventChange(uint32_t eventType, int epollFd) {
+	std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
+	struct epoll_event newEvent;
+	newEvent.events = eventType;
+	newEvent.data.fd = this->getClientFD();
+	std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
+
+	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, newEvent.data.fd, &newEvent) < 0) {
+		this->sendBuffer_.clear();
+		throw std::runtime_error("epoll_ctl() failed for client data receive/send " + std::string(strerror(errno))); // change error msg
+	}
+
 }
 
 // PRIVATE MEMBER FUNCTIONS
@@ -68,6 +106,10 @@ std::string Client::getRealName() const {
 
 std::string Client::getPassword() const {
 	return password_;
+}
+
+std::string Client::getReadBuffer() const {
+	return (readBuffer_);
 }
 
 void Client::setHostname(std::string hostname) {
