@@ -94,6 +94,7 @@ void Server::startServer()
 
 				else if (epEventList[i].events & EPOLLOUT) {
 					// method to send data to specific client;
+					sendData(epEventList[i].data.fd);
 				}
 				usleep(10000); // use for debugging -remove later***
 			}
@@ -107,6 +108,14 @@ void Server::receiveData(int currentFD, int epollFD) {
 	if (client->receiveData() == FAIL) {
 		clients_.erase(currentFD);
 		epoll_ctl(epollFD, EPOLL_CTL_DEL, currentFD, NULL);
+	}
+	client->appendSendBuffer(client->getReadBuffer(), epollFD);
+}
+
+void Server::sendData(int currentFD) {
+	std::unique_ptr<Client>& client = clients_.at(currentFD);
+	if (client->sendData() == FAIL) {
+		throw std::runtime_error("Sending Msg Failed");
 	}
 }
 
