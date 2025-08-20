@@ -87,7 +87,7 @@ void Server::startServer()
 					acceptNewClient(epollFd);
 				}
 				else if (epEventList[i].events & EPOLLIN) {
-					receiveData(epEventList[i].data.fd, epollFd);
+					receiveData(epEventList[i].data.fd);
 				}
 				else if (epEventList[i].events & EPOLLOUT) {
 					// method to send data to specific client;
@@ -120,7 +120,7 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 }
 
 void Server::processBuffer(Client& client) {
-	std::string buf = client.getBuffer();
+	std::string buf = client.getReadBuffer();
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
@@ -138,11 +138,11 @@ void Server::processBuffer(Client& client) {
 	}
 }
 
-void Server::receiveData(int currentFD, int epollFD) {
+void Server::receiveData(int currentFD) {
 	std::unique_ptr<Client>& client = clients_.at(currentFD); //get current Client from map
 	if (client->receiveData() == FAIL) {
+		epoll_ctl(client->getEpollFd(), EPOLL_CTL_DEL, currentFD, NULL);
 		clients_.erase(currentFD);
-		epoll_ctl(epollFD, EPOLL_CTL_DEL, currentFD, NULL);
 		return;
 	}
 	processBuffer(*client);

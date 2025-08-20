@@ -23,9 +23,9 @@ int Client::receiveData() {
     if (bytesRead > 0) {
 
       std::string received(buffer, bytesRead);
-		addToBuffer(received);
-		std::cout << buffer_ << "\n";
-      
+		addReadToBuffer(received);
+		std::cout << readBuffer_ << "\n";
+
 		return SUCCESS;
 	}
 	else if (!bytesRead) {
@@ -67,7 +67,7 @@ void Client::epollEventChange(uint32_t eventType) {
 	newEvent.data.fd = this->getClientFD();
 	std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
 
-	if (epoll_ctl(epollFd_, EPOLL_CTL_MOD, newEvent.data.fd, &newEvent) < 0) {
+	if (epoll_ctl(this->epollFd_, EPOLL_CTL_MOD, newEvent.data.fd, &newEvent) < 0) {
 		this->sendBuffer_.clear();
 		throw std::runtime_error("epoll_ctl() failed for client data receive/send " + std::string(strerror(errno))); // change error msg
 	}
@@ -78,7 +78,8 @@ void Client::epollEventChange(uint32_t eventType) {
 // ========================
 
 void Client::authenticateClient() {
-	if (realName_.empty() || username_.empty() || nickname_.empty() || password_.empty() || !clientFD_ || hostname_.empty())
+	if (realName_.empty() || username_.empty() || nickname_.empty()
+		|| password_.empty() || !clientFD_ || hostname_.empty())
 		return;
 	isAuthenticated_ = true;
 }
@@ -88,6 +89,10 @@ void Client::authenticateClient() {
 
 int Client::getClientFD () const {
 	return clientFD_;
+}
+
+int Client::getEpollFd() const {
+	return (this->epollFd_);
 }
 
 std::string Client::getHostname () const {
@@ -114,7 +119,9 @@ std::string Client::getReadBuffer() const {
 	return (readBuffer_);
 }
 
-void Client::addToBuffer(const std::string& received) {buffer_.append(received);}
+void Client::addReadToBuffer(const std::string& received) {
+	readBuffer_.append(received);
+}
 
 void Client::setHostname(std::string hostname) {
 	hostname_ = hostname;

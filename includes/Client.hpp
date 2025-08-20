@@ -9,6 +9,7 @@
 #include "../includes/Server.hpp"
 
 class Server;
+
 class Client {
 
 	private:
@@ -33,10 +34,11 @@ class Client {
 		// PUBLIC MEMBER FUNCTIONS
 		int receiveData();
 		bool sendData();
-		void addToBuffer(const std::string& received);
+		void addReadToBuffer(const std::string& received);
 
 		// ACCESSORS
 		int getClientFD() const;
+		int getEpollFd() const;
 		std::string getHostname() const;
 		std::string getNickname() const;
 		std::string getUsername() const;
