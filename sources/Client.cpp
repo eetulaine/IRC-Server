@@ -39,7 +39,7 @@ int Client::receiveData() {
 
 void Client::authenticateClient() {
 	if (realName_.empty() || username_.empty() || nickname_.empty() || password_.empty() || !clientFD_ || hostname_.empty())
-		isAuthenticated_ = false;
+		return;
 	isAuthenticated_ = true;
 }
 
