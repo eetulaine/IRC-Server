@@ -10,7 +10,7 @@ class Client {
 
 	private:
 		int clientFD_;
-		std::string readBuffer_;
+		std::string buffer_;
 		std::string sendBuffer_;
 		std::string nickname_;
 		std::string username_;
@@ -28,6 +28,7 @@ class Client {
 
 		// PUBLIC MEMBER FUNCTIONS
 		int receiveData();
+		void addToBuffer(const std::string& received);
 
 		// ACCESSORS
 		int getClientFD() const;
@@ -36,6 +37,7 @@ class Client {
 		std::string getUsername() const;
 		std::string getRealName() const;
 		std::string getPassword() const;
+		std::string getBuffer() const;
 
 		void setHostname(std::string hostname);
 		void setNickname(std::string nickname);
