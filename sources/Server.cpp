@@ -86,29 +86,66 @@ void Server::startServer()
 					std::cout << "server Socket END" << std::endl;
 					acceptNewClient(epollFd);
 				}
-
 				else if (epEventList[i].events & EPOLLIN) {
-					// method to receive data from client;
 					receiveData(epEventList[i].data.fd, epollFd);
 				}
-
 				else if (epEventList[i].events & EPOLLOUT) {
 					// method to send data to specific client;
 					sendData(epEventList[i].data.fd);
 				}
-				usleep(10000); // use for debugging -remove later***
+				//usleep(10000); // use for debugging -remove later***
 			}
 		}
 		//std::cout << YELLOW "still waiting...\n" END_COLOR;
 	}
 }
 
+// here we split the line into command and arguments (params)
+std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std::string& line) {
+	std::string cmd; // the command to be stored
+	std::vector<std::string> params; // the arguments to be stored
+	std::istringstream iss(line);
+	iss >> cmd;
+	std::string token;
+	while (iss >> token) {
+		if (!token.empty() && token[0] == ':') { //check for ':' to indicate the last argument
+			std::string lastParam;
+			std::getline(iss, lastParam);
+			params.push_back(token.substr(1) + lastParam);
+			break; // Stop parsing as this is the last parameter.
+		}
+		params.push_back(token);
+        }
+	return {cmd, params};
+}
+
+void Server::processBuffer(Client& client) {
+	std::string buf = client.getBuffer();
+	size_t pos;
+
+	while ((pos = buf.find("\r\n")) != std::string::npos) {
+		std::string line = buf.substr(0, pos);
+		buf.erase(0, pos + 2);
+		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
+		std::string command = parsed.first;
+        std::vector<std::string> params = parsed.second;
+
+		// PRINT STORED COMMANDS & ARGUMENTS
+		std::cout << "PARSED COMMAND: " BLUE  << command << "\n" END_COLOR;
+		for (const std::string& param : params) {
+    		std::cout << "- " << param << "\n";
+    }
+	}
+}
+
 void Server::receiveData(int currentFD, int epollFD) {
-	std::unique_ptr<Client>& client = clients_.at(currentFD);
+	std::unique_ptr<Client>& client = clients_.at(currentFD); //get current Client from map
 	if (client->receiveData() == FAIL) {
 		clients_.erase(currentFD);
 		epoll_ctl(epollFD, EPOLL_CTL_DEL, currentFD, NULL);
+		return;
 	}
+	processBuffer(*client);
 }
 
 void Server::sendData(int currentFD) {

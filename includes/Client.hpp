@@ -33,6 +33,7 @@ class Client {
 		// PUBLIC MEMBER FUNCTIONS
 		int receiveData();
 		bool sendData();
+		void addToBuffer(const std::string& received);
 
 		// ACCESSORS
 		int getClientFD() const;

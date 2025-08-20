@@ -20,11 +20,12 @@ int Client::receiveData() {
 	char buffer[BUF_SIZE];
 
 	ssize_t bytesRead = recv(clientFD_, buffer, BUF_SIZE, MSG_DONTWAIT);
-	std::cout << "bytesRead: " << bytesRead << "\n";
     if (bytesRead > 0) {
-		std::cout << YELLOW "DATA RECEIVED FROM CLIENT\n" END_COLOR;
-		std::cout << "BUFFER: " << buffer << "\n";
-		this->readBuffer_ = std::string(buffer);
+
+      std::string received(buffer, bytesRead);
+		addToBuffer(received);
+		std::cout << buffer_ << "\n";
+      
 		return SUCCESS;
 	}
 	else if (!bytesRead) {
@@ -78,7 +79,7 @@ void Client::epollEventChange(uint32_t eventType) {
 
 void Client::authenticateClient() {
 	if (realName_.empty() || username_.empty() || nickname_.empty() || password_.empty() || !clientFD_ || hostname_.empty())
-		isAuthenticated_ = false;
+		return;
 	isAuthenticated_ = true;
 }
 
@@ -112,6 +113,8 @@ std::string Client::getPassword() const {
 std::string Client::getReadBuffer() const {
 	return (readBuffer_);
 }
+
+void Client::addToBuffer(const std::string& received) {buffer_.append(received);}
 
 void Client::setHostname(std::string hostname) {
 	hostname_ = hostname;
