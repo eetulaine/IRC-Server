@@ -91,6 +91,7 @@ void Server::startServer()
 				}
 				else if (epEventList[i].events & EPOLLOUT) {
 					// method to send data to specific client;
+					sendData(epEventList[i].data.fd);
 				}
 				//usleep(10000); // use for debugging -remove later***
 			}
@@ -147,6 +148,13 @@ void Server::receiveData(int currentFD, int epollFD) {
 	processBuffer(*client);
 }
 
+void Server::sendData(int currentFD) {
+	std::unique_ptr<Client>& client = clients_.at(currentFD);
+	if (client->sendData() == FAIL) {
+		throw std::runtime_error("Sending Msg Failed");
+	}
+}
+
 std::string Server::getClientIP(struct sockaddr_in clientSocAddr)
 {
 	char clientIP[INET_ADDRSTRLEN]; // if needed convert clientIP to std::string "std::string(clientIP)"
@@ -195,7 +203,7 @@ void Server::acceptNewClient(int epollFd)
 		}
 		//std::cout << "Client added to epoll event" << std::endl; // remove later***
 		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
-		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP);
+		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd);
 	}
 }
 
