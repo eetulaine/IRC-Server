@@ -6,13 +6,14 @@
 #include <unistd.h>
 #include <cstdint> // 'uint32_t'
 #include "../includes/macros.hpp"
-#include "../includes/server.hpp"
+#include "../includes/Server.hpp"
 
 class Server;
 class Client {
 
 	private:
 		int clientFD_;
+		int epollFd_;
 		std::string readBuffer_;
 		std::string sendBuffer_;
 		std::string nickname_;
@@ -26,7 +27,7 @@ class Client {
 		void authenticateClient();
 
 	public:
-		Client(int clientFD, std::string clientIP);
+		Client(int clientFD, std::string clientIP, int epollFd);
 		~Client();
 
 		// PUBLIC MEMBER FUNCTIONS
@@ -49,6 +50,6 @@ class Client {
 		void setRealName(std::string realName);
 		void setPassword(std::string password);
 
-		void appendSendBuffer(std::string sendMsg, int epollFd);
-		void epollEventChange(uint32_t eventType, int epollFd); // any better name??
+		void appendSendBuffer(std::string sendMsg);
+		void epollEventChange(uint32_t eventType); // any better name??
 };

@@ -1,7 +1,8 @@
 #include "../includes/Client.hpp"
 
-Client::Client(int clientFD, std::string clientIP) :
-	clientFD_(clientFD), nickname_(""), username_(""), hostname_(clientIP), realName_(""), password_(""), isAuthenticated_(false) {
+Client::Client(int clientFD, std::string clientIP, int epollFd)
+: clientFD_(clientFD), epollFd_(epollFd), nickname_(""), username_(""),
+  hostname_(clientIP), realName_(""), password_(""), isAuthenticated_(false) {
 	std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
 	std::cout << "clientFD: " << clientFD_ << "\n";
 	std::cout << "hostname: " << hostname_ << "\n";
@@ -51,21 +52,21 @@ bool Client::sendData() {
 }
 
 // After successfull msg process method will call appendSendBuffer to create EPOLLOUT event
-void Client::appendSendBuffer(std::string sendMsg, int epollFd) {
+void Client::appendSendBuffer(std::string sendMsg) {
 	this->sendBuffer_.append(sendMsg);
 	std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
-	epollEventChange(EPOLLOUT, epollFd);
+	epollEventChange(EPOLLOUT);
 }
 
 // Method to change EPOLL IN/OUT event depending on client request
-void Client::epollEventChange(uint32_t eventType, int epollFd) {
+void Client::epollEventChange(uint32_t eventType) {
 	std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
 	struct epoll_event newEvent;
 	newEvent.events = eventType;
 	newEvent.data.fd = this->getClientFD();
 	std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
 
-	if (epoll_ctl(epollFd, EPOLL_CTL_MOD, newEvent.data.fd, &newEvent) < 0) {
+	if (epoll_ctl(epollFd_, EPOLL_CTL_MOD, newEvent.data.fd, &newEvent) < 0) {
 		this->sendBuffer_.clear();
 		throw std::runtime_error("epoll_ctl() failed for client data receive/send " + std::string(strerror(errno))); // change error msg
 	}
