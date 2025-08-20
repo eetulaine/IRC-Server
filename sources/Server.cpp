@@ -75,6 +75,7 @@ void Server::startServer()
 		//std::cout << "Active events outside: " << epActiveSockets << std::endl;
 
 		// handle SIGINT;
+		
 		//std::cout << epActiveSockets << " active sockets\n";
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
@@ -128,13 +129,13 @@ void Server::processBuffer(Client& client) {
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
 		std::string command = parsed.first;
-        std::vector<std::string> params = parsed.second;
+		std::vector<std::string> params = parsed.second;
 
 		// PRINT STORED COMMANDS & ARGUMENTS
 		std::cout << "PARSED COMMAND: " BLUE  << command << "\n" END_COLOR;
 		for (const std::string& param : params) {
-    		std::cout << "- " << param << "\n";
-    }
+			std::cout << "- " << param << "\n";
+	}
 	}
 }
 
