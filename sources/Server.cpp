@@ -109,7 +109,6 @@ void Server::receiveData(int currentFD, int epollFD) {
 		clients_.erase(currentFD);
 		epoll_ctl(epollFD, EPOLL_CTL_DEL, currentFD, NULL);
 	}
-	client->appendSendBuffer(client->getReadBuffer(), epollFD);
 }
 
 void Server::sendData(int currentFD) {
@@ -167,7 +166,7 @@ void Server::acceptNewClient(int epollFd)
 		}
 		//std::cout << "Client added to epoll event" << std::endl; // remove later***
 		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
-		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP);
+		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd);
 	}
 }
 
