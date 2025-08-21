@@ -56,4 +56,7 @@ class Server {
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
+
+		// CHANNEL
+		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
 };
