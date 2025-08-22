@@ -144,5 +144,5 @@ void Client::setPassword(std::string password) {
 }
 
 void Client::setBuffer(std::string buffer) {
-	buffer_ = buffer;
+	readBuffer_ = buffer;
 }
