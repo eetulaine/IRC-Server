@@ -17,6 +17,8 @@
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 
+class Client;
+
 class Server {
 
 	private:
@@ -37,8 +39,9 @@ class Server {
 
 		// dependant methods for "ServerActivity"
 		void acceptNewClient(int epollFd); //-> accept new client request
-		void receiveData(int currentFD, int epollFD);
 		std::string getClientIP(struct sockaddr_in clientSocAddr);
+		void receiveData(int currentFD);
+		void sendData(int currentFD);
 		std::map<int, std::unique_ptr<Client>> clients_;
 		std::pair<std::string, std::vector<std::string>> parseCommand(const std::string& line);
 

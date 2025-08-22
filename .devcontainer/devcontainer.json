@@ -1,0 +1,16 @@
+{
+	"name": "IRC_Dev",
+	"image": "alpine:3.21.3",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"settings": {
+	  "terminal.integrated.shell.linux": "/bin/bash"
+	},
+	"mounts": [
+	  "source=${localWorkspaceFolder},target=/workspace,type=bind"
+	],
+	"remoteUser": "root",
+	"workspaceFolder": "/workspace",
+	"runArgs": ["--name", "IRC_Dev"]
+  }
