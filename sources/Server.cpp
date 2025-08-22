@@ -250,7 +250,7 @@ int Server::getServerSocket() const {
 
 
 ///// ....... SHAHNAJ ........./////////
-// methods related to commands. will move them later to specific section accordingly //////
+// Utils methods related to commands. will move them later to specific section accordingly //////
 
 bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2)
 {
@@ -293,13 +293,3 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	return (FAIL);
 }
 
-void Server::handleNick(Client& client, const std::vector<std::string>& params) {
-
-	// if (arguments are empty)
-		//return ( empty error);
-	// else if (nick is duplicate)
-		//return ( duplicate error);
-
-	// set nick name
-
-}

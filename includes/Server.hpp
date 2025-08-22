@@ -72,4 +72,6 @@ class Server {
 
 		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
+		void handleUser(Client& client, const std::vector<std::string>& params);
+		void handlePass(Client& client, const std::vector<std::string>& params);
 };
