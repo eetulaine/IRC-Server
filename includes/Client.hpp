@@ -44,4 +44,5 @@ class Client {
 		void setUsername(std::string username);
 		void setRealName(std::string realName);
 		void setPassword(std::string password);
+		void setBuffer(std::string buffer);
 };
