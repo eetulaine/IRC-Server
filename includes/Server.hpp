@@ -2,6 +2,8 @@
 
 #include <string>
 #include <iostream>
+//#include <iomanip>
+#include <algorithm> // transform
 #include <sys/socket.h> //-> needed for socket
 #include <sys/epoll.h>	//-> needed for epoll
 #include <netdb.h>      //-> needed for addrinfo
@@ -36,7 +38,7 @@ class Server {
 		void bindSocket();			//-> bind the socket to the address
 		void initListen();			//-> prepare to listen for incoming connections
 
-		// dependant methods for "ServerActivity"
+		// dependent methods for "ServerActivity"
 		void acceptNewClient(int epollFd); //-> accept new client request
 		std::string getClientIP(struct sockaddr_in clientSocAddr);
 		void receiveData(int currentFD);
@@ -56,4 +58,14 @@ class Server {
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
+
+
+		/// dependent Methods for commands
+		bool stringCompCaseIgnore(const std::string &str1, const std::string &str2);
+		bool	isUserDuplicate(std::string  userName);
+		bool	isNickDuplicate(std::string  userName);
+
+
+		// commands
+		void handleNick(Client& client, const std::vector<std::string>& params);
 };
