@@ -23,7 +23,7 @@ int Client::receiveData() {
     if (bytesRead > 0) {
 
       std::string received(buffer, bytesRead);
-		addReadToBuffer(received);
+		addReadBuffer(received);
 		std::cout << readBuffer_ << "\n";
 
 		return SUCCESS;
@@ -119,7 +119,7 @@ std::string Client::getReadBuffer() const {
 	return (readBuffer_);
 }
 
-void Client::addReadToBuffer(const std::string& received) {
+void Client::addReadBuffer(const std::string& received) {
 	readBuffer_.append(received);
 }
 

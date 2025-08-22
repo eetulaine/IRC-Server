@@ -77,6 +77,7 @@ void Server::startServer()
 		//std::cout << "Active events outside: " << epActiveSockets << std::endl;
 
 		// handle SIGINT;
+
 		//std::cout << epActiveSockets << " active sockets\n";
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
@@ -245,4 +246,60 @@ std::string Server::getPassword() const {
 
 int Server::getServerSocket() const {
 	return serverSocket_;
-};
+}
+
+
+///// ....... SHAHNAJ ........./////////
+// methods related to commands. will move them later to specific section accordingly //////
+
+bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2)
+{
+	std::string str1Lower = str1;
+	std::transform(str1Lower.begin(), str1Lower.end(), str1Lower.begin(),
+	               [](unsigned char c){ return std::tolower(c); });
+
+	std::string str2Lower = str2;
+	std::transform(str2Lower.begin(), str2Lower.end(), str2Lower.begin(),
+	               [](unsigned char c){ return std::tolower(c); });
+
+	if (str1Lower == str2Lower)
+	{
+		return (SUCCESS);
+	}
+	else
+		return (FAIL);
+}
+
+// **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
+
+bool Server::isUserDuplicate(std::string userName) {
+	for (auto& [fd, client] : this->clients_) {
+		if (client && stringCompCaseIgnore(client->getUsername(), userName))
+		{
+			return (SUCCESS); // Duplicate found
+		}
+	}
+	return (FAIL);   //  this exits after first client!
+}
+
+bool	Server::isNickDuplicate(std::string  nickName) {
+
+	for (auto& [fd, client] : this->clients_) {
+		if (client && stringCompCaseIgnore(client->getNickname(), nickName))
+		{
+			return (SUCCESS);// Duplicate found
+		}
+	}
+	return (FAIL);
+}
+
+void Server::handleNick(Client& client, const std::vector<std::string>& params) {
+
+	// if (arguments are empty)
+		//return ( empty error);
+	// else if (nick is duplicate)
+		//return ( duplicate error);
+
+	// set nick name
+
+}
