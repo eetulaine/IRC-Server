@@ -13,6 +13,7 @@
 #include <memory>		// for std::unique_ptr
 #include <vector>		// for vector
 #include <sstream>		// for istringstream
+#include <functional>   // for std::function
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 
@@ -44,6 +45,9 @@ class Server {
 		std::map<int, std::unique_ptr<Client>> clients_;
 		std::pair<std::string, std::vector<std::string>> parseCommand(const std::string& line);
 
+		using CommandHandler = std::function<void(Client& client, const std::vector<std::string>& params)>;
+		std::map<std::string, CommandHandler> commands;
+
 	public:
 		Server(int port, std::string password);
 		~Server();
@@ -52,8 +56,12 @@ class Server {
 		// ServerActivity: activity response loop for running server
 		void startServer();			//-> The loop, that will keep the server running and do diff actions
 		void processBuffer(Client& client);
+		void registerCommands();
 
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
+
+		void handleNick(Client& client, const std::vector<std::string>& params);
+		// add all the commands here
 };
