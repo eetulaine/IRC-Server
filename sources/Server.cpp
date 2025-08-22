@@ -13,6 +13,8 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	std::cout << "Port: " << port_ << "\n";
 	std::cout << "Pass: " << password_ << "\n";
 	std::cout << "Sock: " << serverSocket_ << "\n\n";
+
+	registerCommands();
 }
 
 Server::~Server() {
@@ -94,7 +96,7 @@ void Server::startServer()
 					// method to send data to specific client;
 					sendData(epEventList[i].data.fd);
 				}
-				//usleep(10000); // use for debugging -remove later***
+				usleep(10000); // use for debugging -remove later***
 			}
 		}
 		//std::cout << YELLOW "still waiting...\n" END_COLOR;
@@ -128,15 +130,18 @@ void Server::processBuffer(Client& client) {
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
-		std::string command = parsed.first;
-		std::vector<std::string> params = parsed.second;
+		std::string commandStr = parsed.first;
+        std::vector<std::string> params = parsed.second;
 
-		// PRINT STORED COMMANDS & ARGUMENTS
-		std::cout << "PARSED COMMAND: " BLUE  << command << "\n" END_COLOR;
-		for (const std::string& param : params) {
-			std::cout << "- " << param << "\n";
+		auto it = commands.find(commandStr);
+		if (it == commands.end()) {
+			std::cout << "UNKNOWN COMMAND: " << commandStr << "\n";
+			//sendReply(RPL_UNKNOWN_COMMAND)??;
+			continue;
+		}
+		it->second(client, params);
 	}
-	}
+	client.setBuffer(buf);
 }
 
 void Server::receiveData(int currentFD) {

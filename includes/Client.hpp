@@ -52,7 +52,7 @@ class Client {
 		void setUsername(std::string username);
 		void setRealName(std::string realName);
 		void setPassword(std::string password);
-
+		void setBuffer(std::string buffer);
 		void appendSendBuffer(std::string sendMsg);
 		void epollEventChange(uint32_t eventType); // any better name??
 };
