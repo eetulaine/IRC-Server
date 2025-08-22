@@ -95,3 +95,7 @@ void Client::setRealName(std::string realName) {
 void Client::setPassword(std::string password) {
 	password_ = password;
 }
+
+void Client::setBuffer(std::string buffer) {
+	buffer_ = buffer;
+}
