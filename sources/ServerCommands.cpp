@@ -3,6 +3,30 @@
 void Server::registerCommands() {
 	// command CAP will be ignored
 
+	commands["CAP"] = [this](Client& client, const std::vector<std::string>& params) {
+		(void)client;
+		std::cout << "CAP Ignored" << std::endl;
+		for (const std::string& param : params) {
+			std::cout << "- " << param << std::endl;
+		}
+	};
+
+	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
+		(void)client;
+		std::cout << "JOIN Ignored" << std::endl;
+		for (const std::string& param : params) {
+			std::cout << "- " << param << std::endl;
+		}
+	};
+
+	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
+		handlePing(client, params);
+	};
+
+	commands["PONG"] = [this](Client& client, const std::vector<std::string>& params) {
+		handlePong(client, params);
+	};
+
 	commands["NICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleNick(client, params);
 	};
@@ -15,6 +39,42 @@ void Server::registerCommands() {
 		handlePass(client, params);
 	};
 }
+
+void Server::handlePing(Client& client, const std::vector<std::string>& params) {
+	for (const std::string& param : params) {
+		std::cout << "- " << param << std::endl;
+	}
+	(void)client;
+	if (params.empty()) {
+		std::cout << "No origin error" << std::endl;
+		//client.appendSendBuffer(some msg); // error code 431
+		return;
+	}
+	else if (params[0] != "IRCS") {
+		std::cout << "NO such server error" << std::endl;
+		//client.appendSendBuffer(some msg); // error code 431
+		return;
+	}
+	else
+		return;// return pong code;
+
+}
+
+void Server::handlePong(Client& client, const std::vector<std::string>& params) {
+	if (params.empty()) {
+		std::cout << "NO Origin Error" << std::endl;
+		return;
+	}
+	else if (params[0] != client.getClientIdentifier()) {
+		std::cout << "NO such server error" << std::endl;
+		return;
+	}
+	else
+	{
+		return;
+	}
+}
+
 
 void Server::handleNick(Client& client, const std::vector<std::string>& params) {
 

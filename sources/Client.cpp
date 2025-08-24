@@ -59,6 +59,10 @@ void Client::appendSendBuffer(std::string sendMsg) {
 	epollEventChange(EPOLLOUT);
 }
 
+void Client::addReadBuffer(const std::string& received) {
+	readBuffer_.append(received);
+}
+
 // Method to change EPOLL IN/OUT event depending on client request
 void Client::epollEventChange(uint32_t eventType) {
 	std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
@@ -119,8 +123,9 @@ std::string Client::getReadBuffer() const {
 	return (readBuffer_);
 }
 
-void Client::addReadBuffer(const std::string& received) {
-	readBuffer_.append(received);
+
+std::string Client::getClientIdentifier() const {
+	return (":" + nickname_ + "!" + username_ + "@" + hostname_);
 }
 
 void Client::setHostname(std::string hostname) {

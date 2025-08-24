@@ -45,7 +45,7 @@ class Client {
 		std::string getRealName() const;
 		std::string getPassword() const;
 		std::string getReadBuffer() const;
-
+		std::string getClientIdentifier() const;
 
 		void setHostname(std::string hostname);
 		void setNickname(std::string nickname);
