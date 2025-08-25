@@ -4,7 +4,9 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <set>  // for set
 #include <cstdint> // 'uint32_t'
+#include "Channel.hpp"
 #include "../includes/macros.hpp"
 #include "../includes/Server.hpp"
 
@@ -23,6 +25,7 @@ class Client {
 		std::string realName_;
 		std::string password_;
 		bool isAuthenticated_;
+		std::set<std::string> joinedChannels_;    // keeps track of joined channels
 
 		// PRIVATE MEMBER FUNCTIONS
 		// void authenticateClient();
@@ -48,6 +51,8 @@ class Client {
 		std::string getReadBuffer() const;
 		bool getIsAuthenticated() const;
 		std::string getClientIdentifier() const;
+		//const std::set<std::string>& getJoinedChannels() const; // for listing all joined channels
+
 
 		void setHostname(std::string hostname);
 		void setNickname(std::string nickname);
@@ -57,4 +62,7 @@ class Client {
 		void setBuffer(std::string buffer);
 		void appendSendBuffer(std::string sendMsg);
 		void epollEventChange(uint32_t eventType); // any better name??
+		//------ CHANNEL -------
+		void joinChannel(const std::string &channelName);
+		//void leaveChannel(const std::string &channelName);
 };

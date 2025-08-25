@@ -77,6 +77,16 @@ void Client::epollEventChange(uint32_t eventType) {
 	}
 
 }
+//------ CHANNEL --------
+// method to store joined channels
+void Client::joinChannel(const std::string &channelName) {
+
+	auto status = this->joinedChannels_.insert(channelName);
+	if (status.second)
+		std::cout << "Channel " << channelName << "was succefully added!\n";
+	else
+		std::cout << "Client has aleady joined channel" << channelName << "\n";
+}
 
 // PRIVATE MEMBER FUNCTIONS
 // ========================

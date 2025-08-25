@@ -119,6 +119,15 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 		}
 	return {cmd, params};
 }
+// CHANNEL ----- handle join command
+// void Server::handleJoinCommand(Client& client, const std::vector<std::string>& params) {
+//     std::cout << "DEBUG: Entered handleJoinCommand\n";
+//     std::cout << "DEBUG: Client Nickname: " << client.getNickname() << "\n";
+//     std::cout << "DEBUG: Number of parameters: " << params.size() << "\n";
+//     for (const auto& param : params) {
+//         std::cout << "DEBUG: Param: " << param << "\n";
+//     }
+// }
 
 void Server::processBuffer(Client& client) {
 	std::string buf = client.getReadBuffer();

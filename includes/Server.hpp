@@ -83,4 +83,7 @@ class Server {
 		// Message
 		void messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+  
+  // CHANNEL
+		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
 };
