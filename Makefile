@@ -10,7 +10,9 @@ OBJ_PATH 	:= objects/
 SRCS		:= main.cpp \
 				Server.cpp \
 				ServerCommands.cpp \
-				Client.cpp
+				Client.cpp \
+        Channel.cpp
+
 
 SRCS		:= $(addprefix $(SRC_PATH), $(SRCS))
 OBJS		:= $(SRCS:$(SRC_PATH)%.cpp=$(OBJ_PATH)%.o)

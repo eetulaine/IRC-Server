@@ -72,4 +72,7 @@ class Server {
 
 		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
+  // CHANNEL
+		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
+
 };
