@@ -10,6 +10,7 @@ OBJ_PATH 	:= objects/
 SRCS		:= main.cpp \
 				Server.cpp \
 				ServerCommands.cpp \
+				ServerMessage.cpp \
 				Client.cpp
 
 SRCS		:= $(addprefix $(SRC_PATH), $(SRCS))
