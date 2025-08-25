@@ -25,13 +25,14 @@ class Client {
 		bool isAuthenticated_;
 
 		// PRIVATE MEMBER FUNCTIONS
-		void authenticateClient();
+		// void authenticateClient();
 
 	public:
 		Client(int clientFD, std::string clientIP, int epollFd);
 		~Client();
 
 		// PUBLIC MEMBER FUNCTIONS
+		void authenticateClient();
 		int receiveData();
 		bool sendData();
 		void addReadBuffer(const std::string& received);
@@ -45,6 +46,7 @@ class Client {
 		std::string getRealName() const;
 		std::string getPassword() const;
 		std::string getReadBuffer() const;
+		bool getIsAuthenticated() const;
 		std::string getClientIdentifier() const;
 
 		void setHostname(std::string hostname);

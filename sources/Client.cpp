@@ -47,7 +47,7 @@ bool Client::sendData() {
 		return (FAIL);
 	this->sendBuffer_.erase(0, sentByte);
 	if (sendBuffer_.empty()) {
-		// change event
+		epollEventChange(EPOLLIN);
 	}
 	return (SUCCESS);
 }
@@ -123,6 +123,9 @@ std::string Client::getReadBuffer() const {
 	return (readBuffer_);
 }
 
+bool Client::getIsAuthenticated() const {
+	return (this->isAuthenticated_);
+}
 
 std::string Client::getClientIdentifier() const {
 	return (":" + nickname_ + "!" + username_ + "@" + hostname_);
