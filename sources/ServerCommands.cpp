@@ -1,11 +1,12 @@
 #include "../includes/Server.hpp"
+#include "../includes/responseCodes.hpp"
 
 void Server::registerCommands() {
 	// command CAP will be ignored
 
 	commands["CAP"] = [this](Client& client, const std::vector<std::string>& params) {
 		(void)client;
-		std::cout << "CAP Ignored" << std::endl;
+		std::cout << this->getPort() << ", CAP Ignored" << std::endl;
 		for (const std::string& param : params) {
 			std::cout << "- " << param << std::endl;
 		}
@@ -13,7 +14,7 @@ void Server::registerCommands() {
 
 	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
 		(void)client;
-		std::cout << "JOIN Ignored" << std::endl;
+		std::cout  << this->getPort() << ", JOIN Ignored" << std::endl;
 		for (const std::string& param : params) {
 			std::cout << "- " << param << std::endl;
 		}
@@ -41,79 +42,55 @@ void Server::registerCommands() {
 }
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
-	for (const std::string& param : params) {
-		std::cout << "- " << param << std::endl;
-	}
+	// for (const std::string& param : params) {
+	// 	std::cout << "- " << param << std::endl;
+	// }
 	(void)client;
 	if (params.empty()) {
-		std::cout << "No origin error" << std::endl;
-		//client.appendSendBuffer(some msg); // error code 431
-		return;
+		messageHandle(ERR_NOORIGIN, client, "PING", params);
 	}
 	else if (params[0] != "IRCS") {
-		std::cout << "NO such server error" << std::endl;
-		//client.appendSendBuffer(some msg); // error code 431
-		return;
+		messageHandle(ERR_NOSUCHSERVER, client, "PING", params);
 	}
 	else
-		return;// return pong code;
-
+		messageHandle(RPL_PONG, client, "PING", params);
 }
 
 void Server::handlePong(Client& client, const std::vector<std::string>& params) {
 	if (params.empty()) {
-		std::cout << "NO Origin Error" << std::endl;
-		return;
+		messageHandle(ERR_NOORIGIN, client, "PING", params);
 	}
 	else if (params[0] != client.getClientIdentifier()) {
-		std::cout << "NO such server error" << std::endl;
-		return;
-	}
-	else
-	{
-		return;
+		messageHandle(ERR_NOSUCHSERVER, client, "PING", params);
 	}
 }
 
-
 void Server::handleNick(Client& client, const std::vector<std::string>& params) {
-
-	for (const std::string& param : params) {
-		std::cout << "- " << param << std::endl;
-	}
 
 	// No nickname given
 	if (params.empty() || params[0].empty()) {
-		std::cout << "Empty nick name" << std::endl;
-		//client.appendSendBuffer(some msg); // error code 431
-		return;
+		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
 	}
 
 	const std::string& newNick = params[0];
 
 	// Nickname already in use
 	if (isNickDuplicate(newNick)) {
-		std::cout << "Duplicate nick name" << std::endl;
-		//client.appendSendBuffer(some msg); // error code 433
-		return;
+		messageHandle(ERR_NICKNAMEINUSE, client, "NICK", params);
 	}
 
 	// Valid nickname
 	client.setNickname(newNick);
 	std::cout << "Client FD " << client.getClientFD()
-				<< " nickname set to: " << client.getNickname() << std::endl;
+				<< ", nickname set to: " << client.getNickname() << std::endl;
 
 }
 
 
 void Server::handleUser(Client& client, const std::vector<std::string>& params) {
 
-	for (const std::string& param : params) {
-		std::cout << "- " << param << std::endl;
-	}
-
 	if (params.empty() || params[0].empty()) {
-		std::cout << "Empty user name" << std::endl;
+		messageHandle(ERR_NICKNAMEINUSE, client, "USER", params);
 		return;
 	}
 
@@ -124,8 +101,7 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 		return;
 	}
 	else if (params.size() < 4) {
-		std::cout << "Invalid number of perams" << std::endl;
-		return;
+		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
 	}
 	else
 	{
@@ -135,35 +111,32 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 
 	}
 	std::cout << "Client FD " << client.getClientFD()
-				<< " username: " << client.getUsername()
-				<< " Host: " << client.getHostname()
-				<< " RealName: " << client.getRealName() << std::endl;
+				<< ", username: " << client.getUsername()
+				<< ", Host: " << client.getHostname()
+				<< ", RealName: " << client.getRealName() << std::endl;
 
 }
 
-
-
 void Server::handlePass(Client& client, const std::vector<std::string>& params) {
 
-	for (const std::string& param : params) {
-		std::cout << "- " << param << std::endl;
-	}
-
 	if (params.empty() || params[0].empty()) {
-		std::cout << "Empty Password" << std::endl;
+		messageHandle(ERR_NEEDMOREPARAMS, client, "PASS", params);
 		return;
 	}
 
 	const std::string& newPass = params[0];
 
 	if (newPass != this->getPassword()) {
-		std::cout << "Password Doesnot match" << std::endl;
-
-		return;
+		messageHandle(ERR_PASSWDMISMATCH, client, "PASS", params);
+	}
+	else if (client.getIsAuthenticated()) {
+		messageHandle(ERR_ALREADYREGISTRED, client, "PASS", params);
+	}
+	else {
+		client.setPassword(newPass);
+		client.authenticateClient();
 	}
 
-	// Do some authentication check ***
-	client.setPassword(newPass);
 	std::cout << "Client FD " << client.getClientFD()
-				<< " password set to: " << client.getPassword() << std::endl;
+				<< ", password set to: " << client.getPassword() << std::endl;
 }
