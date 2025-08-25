@@ -47,7 +47,7 @@ bool Client::sendData() {
 		return (FAIL);
 	this->sendBuffer_.erase(0, sentByte);
 	if (sendBuffer_.empty()) {
-		// change event
+		epollEventChange(EPOLLIN);
 	}
 	return (SUCCESS);
 }
@@ -57,6 +57,10 @@ void Client::appendSendBuffer(std::string sendMsg) {
 	this->sendBuffer_.append(sendMsg);
 	std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
 	epollEventChange(EPOLLOUT);
+}
+
+void Client::addReadBuffer(const std::string& received) {
+	readBuffer_.append(received);
 }
 
 // Method to change EPOLL IN/OUT event depending on client request
@@ -129,8 +133,12 @@ std::string Client::getReadBuffer() const {
 	return (readBuffer_);
 }
 
-void Client::addReadBuffer(const std::string& received) {
-	readBuffer_.append(received);
+bool Client::getIsAuthenticated() const {
+	return (this->isAuthenticated_);
+}
+
+std::string Client::getClientIdentifier() const {
+	return (":" + nickname_ + "!" + username_ + "@" + hostname_);
 }
 
 void Client::setHostname(std::string hostname) {

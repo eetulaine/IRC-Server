@@ -28,6 +28,7 @@ class Server {
 		std::string password_;
 		int serverSocket_;
 		struct addrinfo hints_, *res_;
+		const std::string	serverName_ = "IRCS_SERV";
 		//static bool isRunning_; // change the value to true when it start
 
 		// private member functions used for the server setup within the Server constructor
@@ -63,6 +64,7 @@ class Server {
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
+		std::string getServerName() const;
 
 		/// dependent Methods for commands
 		bool stringCompCaseIgnore(const std::string &str1, const std::string &str2);
@@ -72,7 +74,16 @@ class Server {
 
 		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
+		void handleUser(Client& client, const std::vector<std::string>& params);
+		void handlePass(Client& client, const std::vector<std::string>& params);
+		void handlePing(Client& client, const std::vector<std::string>& params);
+		void handlePong(Client& client, const std::vector<std::string>& params);
+		//void handlePass(Client& client, const std::vector<std::string>& params);
+
+		// Message
+		void messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+  
   // CHANNEL
 		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
-
 };

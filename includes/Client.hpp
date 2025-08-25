@@ -28,13 +28,14 @@ class Client {
 		std::set<std::string> joinedChannels_;    // keeps track of joined channels
 
 		// PRIVATE MEMBER FUNCTIONS
-		void authenticateClient();
+		// void authenticateClient();
 
 	public:
 		Client(int clientFD, std::string clientIP, int epollFd);
 		~Client();
 
 		// PUBLIC MEMBER FUNCTIONS
+		void authenticateClient();
 		int receiveData();
 		bool sendData();
 		void addReadBuffer(const std::string& received);
@@ -48,6 +49,8 @@ class Client {
 		std::string getRealName() const;
 		std::string getPassword() const;
 		std::string getReadBuffer() const;
+		bool getIsAuthenticated() const;
+		std::string getClientIdentifier() const;
 		//const std::set<std::string>& getJoinedChannels() const; // for listing all joined channels
 
 
