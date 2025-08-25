@@ -2,6 +2,8 @@
 
 #include <string>
 #include <iostream>
+//#include <iomanip>
+#include <algorithm> // transform
 #include <sys/socket.h> //-> needed for socket
 #include <sys/epoll.h>	//-> needed for epoll
 #include <netdb.h>      //-> needed for addrinfo
@@ -13,6 +15,7 @@
 #include <memory>		// for std::unique_ptr
 #include <vector>		// for vector
 #include <sstream>		// for istringstream
+#include <functional>   // for std::function
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 
@@ -36,13 +39,16 @@ class Server {
 		void bindSocket();			//-> bind the socket to the address
 		void initListen();			//-> prepare to listen for incoming connections
 
-		// dependant methods for "ServerActivity"
+		// dependent methods for "ServerActivity"
 		void acceptNewClient(int epollFd); //-> accept new client request
 		std::string getClientIP(struct sockaddr_in clientSocAddr);
 		void receiveData(int currentFD);
 		void sendData(int currentFD);
 		std::map<int, std::unique_ptr<Client>> clients_;
 		std::pair<std::string, std::vector<std::string>> parseCommand(const std::string& line);
+
+		using CommandHandler = std::function<void(Client& client, const std::vector<std::string>& params)>;
+		std::map<std::string, CommandHandler> commands;
 
 	public:
 		Server(int port, std::string password);
@@ -52,11 +58,21 @@ class Server {
 		// ServerActivity: activity response loop for running server
 		void startServer();			//-> The loop, that will keep the server running and do diff actions
 		void processBuffer(Client& client);
+		void registerCommands();
 
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
 
-		// CHANNEL
+		/// dependent Methods for commands
+		bool stringCompCaseIgnore(const std::string &str1, const std::string &str2);
+		bool	isUserDuplicate(std::string  userName);
+		bool	isNickDuplicate(std::string  userName);
+
+
+		// commands
+		void handleNick(Client& client, const std::vector<std::string>& params);
+  // CHANNEL
 		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
+
 };

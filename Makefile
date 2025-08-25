@@ -1,7 +1,7 @@
 NAME 		:= ircserv
 
 CC			:= c++
-FLAGS		:= -Wall -Wextra -Werror -std=c++14
+FLAGS		:= -Wall -Wextra -Werror -std=c++17
 
 INCL 		:= includes/
 SRC_PATH 	:= sources/
@@ -9,8 +9,10 @@ OBJ_PATH 	:= objects/
 
 SRCS		:= main.cpp \
 				Server.cpp \
+				ServerCommands.cpp \
 				Client.cpp \
-				Channel.cpp
+        Channel.cpp
+
 
 SRCS		:= $(addprefix $(SRC_PATH), $(SRCS))
 OBJS		:= $(SRCS:$(SRC_PATH)%.cpp=$(OBJ_PATH)%.o)
