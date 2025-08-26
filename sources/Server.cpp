@@ -24,6 +24,16 @@ Server::~Server() {
 		freeaddrinfo(res_);
 }
 
+void Server::closeServer() {
+if (serverSocket_ >= 0) {
+		close(serverSocket_);
+	}
+	password_.clear();
+	signal(SIGINT, SIG_DFL);
+	signal(SIGTSTP, SIG_DFL);
+	exit(0);
+}
+
 // PRIVATE MEMBER FUNCTIONS USED WITHIN THE SERVER CONSTRUCTOR
 // ===========================================================
 
