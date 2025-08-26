@@ -16,6 +16,7 @@
 #include <vector>		// for vector
 #include <sstream>		// for istringstream
 #include <functional>   // for std::function
+#include <algorithm>	// for transform
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 
@@ -71,13 +72,13 @@ class Server {
 		bool	isUserDuplicate(std::string  userName);
 		bool	isNickDuplicate(std::string  userName);
 
-
 		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
 		void handleUser(Client& client, const std::vector<std::string>& params);
 		void handlePass(Client& client, const std::vector<std::string>& params);
 		void handlePing(Client& client, const std::vector<std::string>& params);
 		void handlePong(Client& client, const std::vector<std::string>& params);
+    void handleQuit(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
 		// Message

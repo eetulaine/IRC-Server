@@ -139,6 +139,7 @@ void Server::processBuffer(Client& client) {
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
 		std::string commandStr = parsed.first;
         std::vector<std::string> params = parsed.second;
+		std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
 
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
@@ -154,6 +155,7 @@ void Server::processBuffer(Client& client) {
 void Server::receiveData(int currentFD) {
 	std::unique_ptr<Client>& client = clients_.at(currentFD); //get current Client from map
 	if (client->receiveData() == FAIL) {
+		client->setConnected(false);
 		epoll_ctl(client->getEpollFd(), EPOLL_CTL_DEL, currentFD, NULL);
 		clients_.erase(currentFD);
 		return;
