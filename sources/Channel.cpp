@@ -1,32 +1,34 @@
 #include "Channel.hpp"
 
-Channel::Channel(const std::string &name, const std::string& key) {
-
-	this->name_ = name;
-	if (!key.empty())
-		this->key_ = key;
-	this->keyProtected_ = false;
-	// this->setChannelKey(key);
+Channel::Channel(const std::string &name, const std::string& key)
+	: name_(name), key_(), keyProtected_(false) {
+	
 	std::cout << GREEN "=== CHANNEL CREATED ===\n" END_COLOR;
-	std::cout << "Channel name: " << name_ << "\n";
-// 	if (!key_.empty())
-// 		std::cout << "Channel key: " << key_ << "\n";
+
+	std::cout << "Name: " << name_ << "\n";
+	if(!key.empty()) {
+		setChannelKey(key);
+		std::cout << "Password: " << key_ << "\n";
+	}
+	else
+		std::cout << "Password: Not provided\n";
+		
 }
 
 Channel::~Channel() {
+
 	std::cout << RED "=== CHANNEL DESTROYED\n" END_COLOR;
 }
-
 
 
 //PUBLIC METHODS
 void Channel::addMember(Client *client) {
 
-	auto status = this->members_.insert(client);
+	auto status = members_.insert(client);
 	if (status.second)
-		std::cout << "Client" << client->getNickname() << "added to channel successfully!\n";
+		std::cout << GREEN << "Member <" << client->getNickname() << "> is successfully added to channel< " << name_ << ">\n" << END_COLOR;
 	else
-		std::cout << "Client" << client->getNickname() << "already exists in the channel\n";
+		std::cout << "Member <" << client->getNickname() << "> already exists in the channel\n";
 
 }
 
@@ -34,9 +36,9 @@ void Channel::removeMember(Client *client) {
 
 	size_t status =  members_.erase(client);
 	if (status)
-		std::cout << "Client" << client->getNickname() << "removed from channel\n";
+		std::cout << "Member <" << client->getNickname() << "> is removed from" << name_ << "channel\n";
 	else
-		std::cout << "Client was not found in channel\n";
+		std::cout << "Menber <" << client->getNickname() << "> was not found in channel\n";
 }
 
 bool Server::channelExists(const std::string& channelName) {
@@ -45,17 +47,12 @@ bool Server::channelExists(const std::string& channelName) {
 
 Channel* Server::createChannel(const std::string& channelName, const std::string& channelKey) {
 
-    if (channelExists(channelName))
-        return channelMap_.at(channelName);
 
     Channel* newChannel = new Channel(channelName, channelKey);
 
-	// if (!channelKey.empty()) {
-    //         newChannel->setChannelKey(channelKey); 
-    // }
+	// check for memory allocation! 
 
-    channelMap_[channelName] = newChannel;
-    std::cout << "Channel " << newChannel->getName() << "was created!\n";
+    channelMap_[channelName] = newChannel; // server stores and keeps track of created channels
     return newChannel;
 }
 
@@ -72,17 +69,30 @@ bool Channel::checkChannelKey(const std::string& providedKey) {
 
 }
 
+bool Channel::isValidChannelName(const std::string& name) {
+
+	if (name.empty() || name.size() > 50)
+		return false;
+	if ((name[0] != '#' && name[0] != '&'))
+		return false;
+
+	static const std::string inavalidChar = " ,\a:";
+	for (size_t i = 0; i < name.size(); i++) {
+		if (inavalidChar.find(name[i]) != std::string::npos)
+			return false;
+	}
+	return true;
+}
 
 
 // ACCESSORS
-
 void Channel::setChannelKey(const std::string& key) {
 
-	this->key_ = key;
+	key_ = key;
 	keyProtected_ = true;
 }
 
-std::string Channel::getName() const {
+std::string Channel::getChannelName() const {
 	return this->name_;
 }
 

@@ -12,13 +12,13 @@ void Server::registerCommands() {
 		}
 	};
 
-	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
-		(void)client;
-		std::cout  << this->getPort() << ", JOIN Ignored" << std::endl;
-		for (const std::string& param : params) {
-			std::cout << "- " << param << std::endl;
-		}
-	};
+	// commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
+	// 	(void)client;
+	// 	std::cout  << this->getPort() << ", JOIN Ignored" << std::endl;
+	// 	for (const std::string& param : params) {
+	// 		std::cout << "- " << param << std::endl;
+	// 	}
+	// };
 
 	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePing(client, params);
@@ -36,6 +36,17 @@ void Server::registerCommands() {
 	    handleJoin(client, params);
 
     };
+		commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleQuit(client, params);
+    };
+
+	commands["USER"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleUser(client, params);
+	};
+
+	commands["PASS"] = [this](Client& client, const std::vector<std::string>& params) {
+		handlePass(client, params);
+	};
 
 }
 
@@ -61,55 +72,48 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
     //DEBUG
     std::cout << "DEBUG: Entered handleJoin\n";
     std::cout << "DEBUG: Client Nickname: " << client.getNickname() << "\n";
-
-    if (params.empty()) {
-        //sendReply();  ERR code + client name + "not enough parameters\n."
-        std::cout << "empty parameters\n.";
-        return ;
-    }
+	
+	
+	if (params.empty()) {
+    	//sendReply(client, "461 " + client.getNickname() + " JOIN :Not enough parameters\r\n");
+    	return;
+	}
 
 
     std::vector<std::string>  requestedChannels = split(params[0], ',');
     std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
     
-    for (int i = 0; i < requestedChannels.size(); i++) {
-        const std::string& channelName = requestedChannels[i]; // -> Validate channel name !
-        const std::string& channelKey = (i < keys.size()) ? keys[i] : ""; // -> Validate channel key !
+    for (size_t i = 0; i < requestedChannels.size(); i++) {
+        const std::string& channelName = requestedChannels[i];
+        const std::string& channelKey = (i < keys.size()) ? keys[i] : "";
+
+		if (!Channel::isValidChannelName(channelName)) {
+			continue; // return;
+		}
+			 
+		
+		// -> How should we validate channel key..?
 
         if (client.hasJoinedChannel(channelName)) {
-                continue;
-        }
-                
-        Channel* channel = channelExists(channelName)
-                            ? getChannel(channelName)
-                            : createChannel(channelName, channelKey);
-                            
-        // seperate getChannel and create Channel logic !!
+			 continue;
+		}
+               
+		Channel* channel = getChannel(channelName);
+		if (channel) {
+			if (!channel->checkChannelKey(channelKey)) {
+				std::cout << "Error: Keys do not match.\n";
+				continue; //return;
+			}
+			   std::cout << "Member " << client.getNickname() << " successfully joined key-protected channel: " << channelName << "\n";
 
-        if (channel->requiresPassword()) {
-            if (channel->getChannelKey() != channelKey) {
-                std::cout << "cannot join channel " << channel->getName() << ".\n";
-                continue;
-                // return ;
-            }
-        }
-       
+		} else {
+			channel = createChannel(channelName, channelKey);
+		}
+		
         channel->addMember(&client);      // server-side  -> add client to channel
-        client.joinChannel(channelName);  // client side  -> track joined channels
+        client.activeChannels(channelName);  // client side  -> track joined channels
         //channel->broadcast(client.getNickname() + " has joined " + channelName);
     }
-
-	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleQuit(client, params);
-    };
-
-	commands["USER"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleUser(client, params);
-	};
-
-	commands["PASS"] = [this](Client& client, const std::vector<std::string>& params) {
-		handlePass(client, params);
-	};
 }
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {

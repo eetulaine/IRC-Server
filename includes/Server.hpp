@@ -94,7 +94,7 @@ class Server {
 		void handlePass(Client& client, const std::vector<std::string>& params);
 		void handlePing(Client& client, const std::vector<std::string>& params);
 		void handlePong(Client& client, const std::vector<std::string>& params);
-    void handleQuit(Client& client, const std::vector<std::string>& params);
+    	void handleQuit(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
 		// Message
