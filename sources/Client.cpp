@@ -2,7 +2,7 @@
 
 Client::Client(int clientFD, std::string clientIP, int epollFd)
 : clientFD_(clientFD), epollFd_(epollFd), nickname_(""), username_(""),
-  hostname_(clientIP), realName_(""), password_(""), isAuthenticated_(false) {
+  hostname_(clientIP), realName_(""), password_(""), authenticated_(false), connected_(true) {
 	std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
 	std::cout << "clientFD: " << clientFD_ << "\n";
 	std::cout << "hostname: " << hostname_ << "\n";
@@ -21,17 +21,15 @@ int Client::receiveData() {
 
 	ssize_t bytesRead = recv(clientFD_, buffer, BUF_SIZE, MSG_DONTWAIT);
     if (bytesRead > 0) {
-
-      std::string received(buffer, bytesRead);
+		std::string received(buffer, bytesRead);
 		addReadToBuffer(received);
 		std::cout << readBuffer_ << "\n";
-
 		return SUCCESS;
 	}
 	else if (!bytesRead) {
 		std::cout << "Client " << clientFD_ << " disconnected." << std::endl;
 	}
-	else {
+	else if (bytesRead < 0) {
 		std::cerr << "recv failed\n";
 	}
 	return FAIL;
@@ -74,14 +72,44 @@ void Client::epollEventChange(uint32_t eventType) {
 
 }
 
+bool Client::isConnected() const {
+	if (!connected_) {
+		return false;
+	}
+	if (clientFD_ < 0) {
+		return false;
+	}
+	if (!isSocketValid()) {
+		return false;
+	}
+    return true;
+}
+
+bool Client::isAuthenticated() {
+	if (realName_.empty() || username_.empty() || nickname_.empty()
+		|| password_.empty() || !clientFD_ || hostname_.empty()) {
+		return false;
+	}
+	authenticated_ = true;
+	return authenticated_;
+}
+
 // PRIVATE MEMBER FUNCTIONS
 // ========================
 
-void Client::authenticateClient() {
-	if (realName_.empty() || username_.empty() || nickname_.empty()
-		|| password_.empty() || !clientFD_ || hostname_.empty())
-		return;
-	isAuthenticated_ = true;
+bool Client::isSocketValid() const {
+	if (clientFD_ < 0) 
+		return false;
+
+	// Use send with MSG_NOSIGNAL to test if socket is alive
+	// This doesn't actually send data
+	int result = send(clientFD_, "", 0, MSG_NOSIGNAL);
+	if (result == -1) {
+		if (errno == EBADF || errno == ENOTSOCK || errno == EPIPE || errno == ECONNRESET) {
+			return false;
+		}
+	}
+	return true;
 }
 
 // ACCESSORS
@@ -116,7 +144,7 @@ std::string Client::getPassword() const {
 }
 
 std::string Client::getReadBuffer() const {
-	return (readBuffer_);
+	return readBuffer_;
 }
 
 void Client::addReadToBuffer(const std::string& received) {
@@ -145,4 +173,12 @@ void Client::setPassword(std::string password) {
 
 void Client::setBuffer(std::string buffer) {
 	readBuffer_ = buffer;
+}
+
+void Client::setConnected(bool connected) {
+	connected_ = connected;
+}
+
+void Client::setAuthenticated(bool authenticated) {
+	authenticated_ = authenticated;
 }
