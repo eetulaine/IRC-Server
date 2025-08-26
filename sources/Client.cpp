@@ -77,6 +77,7 @@ void Client::epollEventChange(uint32_t eventType) {
 
 }
 //------ CHANNEL --------
+
 // method to store joined channels
 void Client::joinChannel(const std::string &channelName) {
 
@@ -113,7 +114,7 @@ bool Client::isAuthenticated() {
 // ========================
 
 bool Client::isSocketValid() const {
-	if (clientFD_ < 0) 
+	if (clientFD_ < 0)
 		return false;
 
 	// Use send with MSG_NOSIGNAL to test if socket is alive
