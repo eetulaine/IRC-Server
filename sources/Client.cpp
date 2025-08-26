@@ -162,6 +162,10 @@ std::string Client::getReadBuffer() const {
 	return readBuffer_;
 }
 
+std::string Client::getSendBuffer() const {
+	return sendBuffer_;
+}
+
 bool Client::getIsAuthenticated() const {
 	return authenticated_;
 }

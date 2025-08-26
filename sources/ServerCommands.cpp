@@ -148,18 +148,33 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-	(void)client;
+
 	std::cout << "Handling QUIT command. Parameters: " << std::endl;
-	std::string quitMessage = "Client quit\r\n";
-	if (!params.empty())
-		quitMessage = " QUIT :" + params[0] + "\r\n";
-    if (!client.isConnected() || !client.isAuthenticated()) //no broadcasting from unconnected or unregistered clients
+    if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
+		closeClient(client);
 		return;
+	}
+	std::string quitMessage = "Client quit";
+	if (!params.empty())
+		quitMessage = " QUIT :" + params[0];
 	quitMessage = ":" + client.getNickname() + "!" + 
 						client.getUsername() + "@" + 
 						client.getHostname() + quitMessage + "\r\n";
 	client.appendSendBuffer(quitMessage);
-	clients_.erase(client.getClientFD());
-	closeServer();
+	client.sendData();
+	closeClient(client);
 };
 
+void Server::closeClient(Client& client) {
+
+	int clientfd = client.getClientFD();
+	int epollfd = client.getEpollFd();
+	client.setConnected(false);
+
+	struct epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = clientfd;
+	epoll_ctl(epollfd, EPOLL_CTL_DEL, clientfd, &ev);
+	close(clientfd);
+	clients_.erase(clientfd);
+}

@@ -50,6 +50,7 @@ class Client {
 		std::string getRealName() const;
 		std::string getPassword() const;
 		std::string getReadBuffer() const;
+		std::string getSendBuffer() const;
 		bool isConnected() const;
 		bool isAuthenticated();
 		bool getIsAuthenticated() const;
