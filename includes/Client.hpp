@@ -26,6 +26,7 @@ class Client {
 		std::string password_;
 		bool authenticated_;
 		bool connected_;
+		bool isPassValid_;
 
 		// PRIVATE MEMBER FUNCTIONS
 		bool isSocketValid() const;
@@ -52,6 +53,7 @@ class Client {
 		bool isConnected() const;
 		bool isAuthenticated();
 		bool getIsAuthenticated() const;
+		bool getIsPassValid() const;
 		std::string getClientIdentifier() const;
 		//const std::set<std::string>& getJoinedChannels() const; // for listing all joined channels
 
@@ -63,6 +65,7 @@ class Client {
 		void setBuffer(std::string buffer);
 		void setConnected(bool connected);
 		void setAuthenticated(bool authenticated);
+		void setIsPassValid(bool isPassValid);
 		void appendSendBuffer(std::string sendMsg);
 		void epollEventChange(uint32_t eventType); // any better name??
 		//------ CHANNEL -------
