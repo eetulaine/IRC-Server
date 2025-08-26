@@ -14,6 +14,7 @@
 #include <vector>		// for vector
 #include <sstream>		// for istringstream
 #include <functional>   // for std::function
+#include <algorithm>	// for transform
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 
@@ -62,6 +63,8 @@ class Server {
 		int getServerSocket() const;
 		std::string getPassword() const;
 
+		// Command handling
 		void handleNick(Client& client, const std::vector<std::string>& params);
+		void handleQuit(Client& client, const std::vector<std::string>& params);
 		// add all the commands here
 };
