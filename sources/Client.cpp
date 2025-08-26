@@ -21,8 +21,9 @@ int Client::receiveData() {
 
 	ssize_t bytesRead = recv(clientFD_, buffer, BUF_SIZE, MSG_DONTWAIT);
     if (bytesRead > 0) {
-		std::string received(buffer, bytesRead);
-		addReadToBuffer(received);
+
+    std::string received(buffer, bytesRead);
+		addReadBuffer(received);
 		std::cout << readBuffer_ << "\n";
 		return SUCCESS;
 	}
@@ -45,7 +46,7 @@ bool Client::sendData() {
 		return (FAIL);
 	this->sendBuffer_.erase(0, sentByte);
 	if (sendBuffer_.empty()) {
-		// change event
+		epollEventChange(EPOLLIN);
 	}
 	return (SUCCESS);
 }
@@ -55,6 +56,10 @@ void Client::appendSendBuffer(std::string sendMsg) {
 	this->sendBuffer_.append(sendMsg);
 	std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
 	epollEventChange(EPOLLOUT);
+}
+
+void Client::addReadBuffer(const std::string& received) {
+	readBuffer_.append(received);
 }
 
 // Method to change EPOLL IN/OUT event depending on client request
@@ -70,6 +75,16 @@ void Client::epollEventChange(uint32_t eventType) {
 		throw std::runtime_error("epoll_ctl() failed for client data receive/send " + std::string(strerror(errno))); // change error msg
 	}
 
+}
+//------ CHANNEL --------
+// method to store joined channels
+void Client::joinChannel(const std::string &channelName) {
+
+	auto status = this->joinedChannels_.insert(channelName);
+	if (status.second)
+		std::cout << "Channel " << channelName << "was succefully added!\n";
+	else
+		std::cout << "Client has aleady joined channel" << channelName << "\n";
 }
 
 bool Client::isConnected() const {
@@ -147,8 +162,12 @@ std::string Client::getReadBuffer() const {
 	return readBuffer_;
 }
 
-void Client::addReadToBuffer(const std::string& received) {
-	readBuffer_.append(received);
+bool Client::getIsAuthenticated() const {
+	return (this->isAuthenticated_);
+}
+
+std::string Client::getClientIdentifier() const {
+	return (":" + nickname_ + "!" + username_ + "@" + hostname_);
 }
 
 void Client::setHostname(std::string hostname) {

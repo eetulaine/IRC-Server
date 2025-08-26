@@ -2,6 +2,8 @@
 
 #include <string>
 #include <iostream>
+//#include <iomanip>
+#include <algorithm> // transform
 #include <sys/socket.h> //-> needed for socket
 #include <sys/epoll.h>	//-> needed for epoll
 #include <netdb.h>      //-> needed for addrinfo
@@ -27,6 +29,7 @@ class Server {
 		std::string password_;
 		int serverSocket_;
 		struct addrinfo hints_, *res_;
+		const std::string	serverName_ = "IRCS_SERV";
 		//static bool isRunning_; // change the value to true when it start
 
 		// private member functions used for the server setup within the Server constructor
@@ -38,7 +41,7 @@ class Server {
 		void bindSocket();			//-> bind the socket to the address
 		void initListen();			//-> prepare to listen for incoming connections
 
-		// dependant methods for "ServerActivity"
+		// dependent methods for "ServerActivity"
 		void acceptNewClient(int epollFd); //-> accept new client request
 		std::string getClientIP(struct sockaddr_in clientSocAddr);
 		void receiveData(int currentFD);
@@ -62,9 +65,26 @@ class Server {
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
+		std::string getServerName() const;
 
-		// Command handling
+		/// dependent Methods for commands
+		bool stringCompCaseIgnore(const std::string &str1, const std::string &str2);
+		bool	isUserDuplicate(std::string  userName);
+		bool	isNickDuplicate(std::string  userName);
+
+		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
-		void handleQuit(Client& client, const std::vector<std::string>& params);
-		// add all the commands here
+		void handleUser(Client& client, const std::vector<std::string>& params);
+		void handlePass(Client& client, const std::vector<std::string>& params);
+		void handlePing(Client& client, const std::vector<std::string>& params);
+		void handlePong(Client& client, const std::vector<std::string>& params);
+    void handleQuit(Client& client, const std::vector<std::string>& params);
+		//void handlePass(Client& client, const std::vector<std::string>& params);
+
+		// Message
+		void messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+  
+  // CHANNEL
+		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
 };

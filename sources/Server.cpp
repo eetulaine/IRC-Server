@@ -48,6 +48,7 @@ void Server::createServSocket() {
 	if (serverSocket_ < 0)
 		throw std::runtime_error("failed to create socket");
 }
+
 void Server::setNonBlocking() {
 	if (fcntl(serverSocket_, F_SETFL, O_NONBLOCK) == -1)
 		throw std::runtime_error("fcntl failed to set non-blocking");
@@ -56,7 +57,7 @@ void Server::setNonBlocking() {
 void Server::startServer()
 {
 	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
-  std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
+	std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
 
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
@@ -74,10 +75,9 @@ void Server::startServer()
 	std::cout << GREEN "Waiting for events...\n" END_COLOR;
 	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
-		//std::cout << "Active events outside: " << epActiveSockets << std::endl;
 
 		// handle SIGINT;
-		//std::cout << epActiveSockets << " active sockets\n";
+
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
@@ -92,7 +92,6 @@ void Server::startServer()
 					receiveData(epEventList[i].data.fd);
 				}
 				else if (epEventList[i].events & EPOLLOUT) {
-					// method to send data to specific client;
 					sendData(epEventList[i].data.fd);
 				}
 				usleep(10000); // use for debugging -remove later***
@@ -117,9 +116,18 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 			break; // Stop parsing as this is the last parameter.
 		}
 		params.push_back(token);
-        }
+		}
 	return {cmd, params};
 }
+// CHANNEL ----- handle join command
+// void Server::handleJoinCommand(Client& client, const std::vector<std::string>& params) {
+//     std::cout << "DEBUG: Entered handleJoinCommand\n";
+//     std::cout << "DEBUG: Client Nickname: " << client.getNickname() << "\n";
+//     std::cout << "DEBUG: Number of parameters: " << params.size() << "\n";
+//     for (const auto& param : params) {
+//         std::cout << "DEBUG: Param: " << param << "\n";
+//     }
+// }
 
 void Server::processBuffer(Client& client) {
 	std::string buf = client.getReadBuffer();
@@ -184,7 +192,8 @@ void Server::acceptNewClient(int epollFd)
 		throw std::runtime_error("Client accept() failed");
 		// should exit or return to main/server loop???
 	}
-	else {
+	else
+	{
 		//usleep(10000);
 		//std::cout << "Client FD :" << clientFd << std::endl; // remove later***
 		if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) { // Make client non-blocking
@@ -210,7 +219,7 @@ void Server::acceptNewClient(int epollFd)
 		}
 		//std::cout << "Client added to epoll event" << std::endl; // remove later***
 		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
-		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd);
+		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd); // what about client Index 0-3??*****
 	}
 }
 
@@ -247,4 +256,53 @@ std::string Server::getPassword() const {
 
 int Server::getServerSocket() const {
 	return serverSocket_;
-};
+}
+
+std::string Server::getServerName() const {
+	return (this->serverName_);
+}
+
+///// ....... SHAHNAJ ........./////////
+// Utils methods related to commands. will move them later to specific section accordingly //////
+
+bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2)
+{
+	std::string str1Lower = str1;
+	std::transform(str1Lower.begin(), str1Lower.end(), str1Lower.begin(),
+	               [](unsigned char c){ return std::tolower(c); });
+
+	std::string str2Lower = str2;
+	std::transform(str2Lower.begin(), str2Lower.end(), str2Lower.begin(),
+	               [](unsigned char c){ return std::tolower(c); });
+
+	if (str1Lower == str2Lower)
+	{
+		return (SUCCESS);
+	}
+	else
+		return (FAIL);
+}
+
+// **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
+
+bool Server::isUserDuplicate(std::string userName) {
+	for (auto& [fd, client] : this->clients_) {
+		if (client && stringCompCaseIgnore(client->getUsername(), userName))
+		{
+			return (SUCCESS); // Duplicate found
+		}
+	}
+	return (FAIL);   //  this exits after first client!
+}
+
+bool	Server::isNickDuplicate(std::string  nickName) {
+
+	for (auto& [fd, client] : this->clients_) {
+		if (client && stringCompCaseIgnore(client->getNickname(), nickName))
+		{
+			return (SUCCESS);// Duplicate found
+		}
+	}
+	return (FAIL);
+}
+
