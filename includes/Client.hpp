@@ -29,7 +29,6 @@ class Client {
 
 		// PRIVATE MEMBER FUNCTIONS
 		bool isSocketValid() const;
-		bool isAuthenticated_;
 		std::set<std::string> joinedChannels_;    // keeps track of joined channels
 
 	public:
@@ -37,7 +36,6 @@ class Client {
 		~Client();
 
 		// PUBLIC MEMBER FUNCTIONS
-		void authenticateClient();
 		int receiveData();
 		bool sendData();
 		void addReadBuffer(const std::string& received);
