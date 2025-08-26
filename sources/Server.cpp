@@ -1,6 +1,8 @@
 #include "../includes/Server.hpp"
 #include "../includes/Client.hpp"
 
+bool isRunning_ = true; // change the value to true when it start
+
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
 	createAddrInfo();
@@ -25,12 +27,13 @@ Server::~Server() {
 }
 
 void Server::closeServer() {
-if (serverSocket_ >= 0) {
+	if (serverSocket_ >= 0) {
 		close(serverSocket_);
 	}
 	password_.clear();
 	signal(SIGINT, SIG_DFL);
 	signal(SIGTSTP, SIG_DFL);
+	isRunning_ = false;
 	exit(0);
 }
 
@@ -83,7 +86,7 @@ void Server::startServer()
 	struct epoll_event epEventList[MAX_EVENTS];
 
 	std::cout << GREEN "Waiting for events...\n" END_COLOR;
-	while(true) {
+	while(isRunning_) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
 		// handle SIGINT;
@@ -104,7 +107,7 @@ void Server::startServer()
 				else if (epEventList[i].events & EPOLLOUT) {
 					sendData(epEventList[i].data.fd);
 				}
-				usleep(10000); // use for debugging -remove later***
+				//usleep(10000); // use for debugging -remove later***
 			}
 		}
 		//std::cout << YELLOW "still waiting...\n" END_COLOR;

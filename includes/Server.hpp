@@ -31,7 +31,6 @@ class Server {
 		int serverSocket_;
 		struct addrinfo hints_, *res_;
 		const std::string	serverName_ = "IRCS_SERV";
-		//static bool isRunning_; // change the value to true when it start
 
 		// private member functions used for the server setup within the Server constructor
 		void initAddrInfo(); 		//-> init addrinfo struct settings
@@ -63,6 +62,7 @@ class Server {
 		void processBuffer(Client& client);
 		void registerCommands();
 		void closeServer();
+		void closeClient(Client& client);
 
 		int	getPort() const;
 		int getServerSocket() const;
