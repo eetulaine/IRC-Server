@@ -8,22 +8,24 @@
 
 
 class Client;
+
 class Channel {
 	private:
 		std::string name_;
-		std::string topic_;
+		// std::string topic_;
 		// std::string topic_setter_;  // is it needed? 
 		std::string key_;  //password for joining protected channels
-		std::set<Client*> clients_;     // pointer to store clients
+		bool keyProtected_;
+		std::set<Client*> members_;     // pointer to store clients
 
 	public:
-		Channel(const std::string &name);
+		Channel(const std::string &name, const std::string& );
 		~Channel();
 
 		
 		//METHODS
-		void addClinet(Client *client);
-		void removeClient(Client *client);
+		void addMember(Client *client);
+		void removeMember(Client *client);
 		// bool hasKey(Client *client) const; // check for protected channel
 
 
@@ -32,9 +34,12 @@ class Channel {
 
 
 		// ACCESSORS
+		void setChannelKey(const std::string& key);
+		bool requiresPassword();
 		std::string getName() const;
 		std::string getTopic(); // make it const?
-		std::string getKey() const;
+		std::string getChannelKey() const;
+		bool checkChannelKey(const std::string& providedKey);
 		const std::set<Client *> &getClients() const; // list all clients in the channel
 
 };

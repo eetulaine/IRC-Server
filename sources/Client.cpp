@@ -84,6 +84,11 @@ void Client::joinChannel(const std::string &channelName) {
 		std::cout << "Client has aleady joined channel" << channelName << "\n";
 }
 
+bool Client::hasJoinedChannel(const std::string& channelName) {
+	
+	return joinedChannels_.find(channelName) != joinedChannels_.end();
+}
+
 // PRIVATE MEMBER FUNCTIONS
 // ========================
 

@@ -18,8 +18,11 @@
 #include <functional>   // for std::function
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
+#include "../includes/Channel.hpp"
+
 
 class Client;
+class Channel;
 
 class Server {
 
@@ -50,6 +53,10 @@ class Server {
 		using CommandHandler = std::function<void(Client& client, const std::vector<std::string>& params)>;
 		std::map<std::string, CommandHandler> commands;
 
+
+		// CHANNEL ----- Hager -----
+		std::map<std::string, Channel*>  channelMap_;     // keeps track of created channels
+
 	public:
 		Server(int port, std::string password);
 		~Server();
@@ -72,7 +79,10 @@ class Server {
 
 		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
-  // CHANNEL
-		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
+		// CHANNEL
+		void handleJoin(Client& client, const std::vector<std::string>& params);
+		bool channelExists(const std::string& channelName);
+		Channel* getChannel(const std::string& channelName);
+		Channel* createChannel(const std::string& channelName, const std::string& channelKey);
 
 };
