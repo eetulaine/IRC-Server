@@ -9,6 +9,7 @@ RUN apk update && apk add --no-cache \
     bash \
     git \
     vim \
+    irssi \
     linux-headers
 
 # Set working directory inside the container

@@ -1,6 +1,8 @@
 #include "../includes/Server.hpp"
 #include "../includes/Client.hpp"
 
+bool isRunning_ = true; // change the value to true when it start
+
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
 	createAddrInfo();
@@ -22,6 +24,17 @@ Server::~Server() {
 		close(serverSocket_);
 	if (res_)
 		freeaddrinfo(res_);
+}
+
+void Server::closeServer() {
+	if (serverSocket_ >= 0) {
+		close(serverSocket_);
+	}
+	password_.clear();
+	signal(SIGINT, SIG_DFL);
+	signal(SIGTSTP, SIG_DFL);
+	isRunning_ = false;
+	exit(0);
 }
 
 // PRIVATE MEMBER FUNCTIONS USED WITHIN THE SERVER CONSTRUCTOR
@@ -48,6 +61,7 @@ void Server::createServSocket() {
 	if (serverSocket_ < 0)
 		throw std::runtime_error("failed to create socket");
 }
+
 void Server::setNonBlocking() {
 	if (fcntl(serverSocket_, F_SETFL, O_NONBLOCK) == -1)
 		throw std::runtime_error("fcntl failed to set non-blocking");
@@ -56,7 +70,7 @@ void Server::setNonBlocking() {
 void Server::startServer()
 {
 	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
-  std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
+	std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
 
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
@@ -72,13 +86,11 @@ void Server::startServer()
 	struct epoll_event epEventList[MAX_EVENTS];
 
 	std::cout << GREEN "Waiting for events...\n" END_COLOR;
-	while(true) {
+	while(isRunning_) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
-		//std::cout << "Active events outside: " << epActiveSockets << std::endl;
 
 		// handle SIGINT;
 
-		//std::cout << epActiveSockets << " active sockets\n";
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
@@ -93,10 +105,9 @@ void Server::startServer()
 					receiveData(epEventList[i].data.fd);
 				}
 				else if (epEventList[i].events & EPOLLOUT) {
-					// method to send data to specific client;
 					sendData(epEventList[i].data.fd);
 				}
-				usleep(10000); // use for debugging -remove later***
+				//usleep(10000); // use for debugging -remove later***
 			}
 		}
 		//std::cout << YELLOW "still waiting...\n" END_COLOR;
@@ -118,7 +129,7 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 			break; // Stop parsing as this is the last parameter.
 		}
 		params.push_back(token);
-        }
+		}
 	return {cmd, params};
 }
 
@@ -133,6 +144,7 @@ void Server::processBuffer(Client& client) {
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
 		std::string commandStr = parsed.first;
         std::vector<std::string> params = parsed.second;
+		std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
 
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
@@ -148,6 +160,7 @@ void Server::processBuffer(Client& client) {
 void Server::receiveData(int currentFD) {
 	std::unique_ptr<Client>& client = clients_.at(currentFD); //get current Client from map
 	if (client->receiveData() == FAIL) {
+		client->setConnected(false);
 		epoll_ctl(client->getEpollFd(), EPOLL_CTL_DEL, currentFD, NULL);
 		clients_.erase(currentFD);
 		return;
@@ -184,7 +197,8 @@ void Server::acceptNewClient(int epollFd)
 		throw std::runtime_error("Client accept() failed");
 		// should exit or return to main/server loop???
 	}
-	else {
+	else
+	{
 		//usleep(10000);
 		//std::cout << "Client FD :" << clientFd << std::endl; // remove later***
 		if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) { // Make client non-blocking
@@ -210,7 +224,7 @@ void Server::acceptNewClient(int epollFd)
 		}
 		//std::cout << "Client added to epoll event" << std::endl; // remove later***
 		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
-		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd);
+		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd); // what about client Index 0-3??*****
 	}
 }
 
@@ -249,9 +263,12 @@ int Server::getServerSocket() const {
 	return serverSocket_;
 }
 
+std::string Server::getServerName() const {
+	return (this->serverName_);
+}
 
 ///// ....... SHAHNAJ ........./////////
-// methods related to commands. will move them later to specific section accordingly //////
+// Utils methods related to commands. will move them later to specific section accordingly //////
 
 bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2)
 {
@@ -294,13 +311,3 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	return (FAIL);
 }
 
-void Server::handleNick(Client& client, const std::vector<std::string>& params) {
-
-	// if (arguments are empty)
-		//return ( empty error);
-	// else if (nick is duplicate)
-		//return ( duplicate error);
-
-	// set nick name
-
-}

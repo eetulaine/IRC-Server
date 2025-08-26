@@ -16,6 +16,8 @@
 #include <vector>		// for vector
 #include <sstream>		// for istringstream
 #include <functional>   // for std::function
+#include <algorithm>	// for transform
+#include <csignal>		// for signal
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 #include "../includes/Channel.hpp"
@@ -31,7 +33,7 @@ class Server {
 		std::string password_;
 		int serverSocket_;
 		struct addrinfo hints_, *res_;
-		//static bool isRunning_; // change the value to true when it start
+		const std::string	serverName_ = "IRCS_SERV";
 
 		// private member functions used for the server setup within the Server constructor
 		void initAddrInfo(); 		//-> init addrinfo struct settings
@@ -66,23 +68,37 @@ class Server {
 		void startServer();			//-> The loop, that will keep the server running and do diff actions
 		void processBuffer(Client& client);
 		void registerCommands();
+		void closeServer();
+		void closeClient(Client& client);
 
 		int	getPort() const;
 		int getServerSocket() const;
 		std::string getPassword() const;
+		std::string getServerName() const;
 
 		/// dependent Methods for commands
 		bool stringCompCaseIgnore(const std::string &str1, const std::string &str2);
 		bool	isUserDuplicate(std::string  userName);
 		bool	isNickDuplicate(std::string  userName);
 
-
 		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
+  
 		// CHANNEL
 		void handleJoin(Client& client, const std::vector<std::string>& params);
 		bool channelExists(const std::string& channelName);
 		Channel* getChannel(const std::string& channelName);
 		Channel* createChannel(const std::string& channelName, const std::string& channelKey);
+
+		void handleUser(Client& client, const std::vector<std::string>& params);
+		void handlePass(Client& client, const std::vector<std::string>& params);
+		void handlePing(Client& client, const std::vector<std::string>& params);
+		void handlePong(Client& client, const std::vector<std::string>& params);
+    void handleQuit(Client& client, const std::vector<std::string>& params);
+		//void handlePass(Client& client, const std::vector<std::string>& params);
+
+		// Message
+		void messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
 
 };
