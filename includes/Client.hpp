@@ -22,10 +22,11 @@ class Client {
 		std::string hostname_;
 		std::string realName_;
 		std::string password_;
-		bool isAuthenticated_;
+		bool authenticated_;
+		bool connected_;
 
 		// PRIVATE MEMBER FUNCTIONS
-		void authenticateClient();
+		bool isSocketValid() const;
 
 	public:
 		Client(int clientFD, std::string clientIP, int epollFd);
@@ -45,7 +46,8 @@ class Client {
 		std::string getRealName() const;
 		std::string getPassword() const;
 		std::string getReadBuffer() const;
-
+		bool isConnected() const;
+		bool isAuthenticated();
 
 		void setHostname(std::string hostname);
 		void setNickname(std::string nickname);
@@ -53,6 +55,8 @@ class Client {
 		void setRealName(std::string realName);
 		void setPassword(std::string password);
 		void setBuffer(std::string buffer);
+		void setConnected(bool connected);
+		void setAuthenticated(bool authenticated);
 		void appendSendBuffer(std::string sendMsg);
 		void epollEventChange(uint32_t eventType); // any better name??
 };
