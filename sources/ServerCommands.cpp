@@ -12,13 +12,13 @@ void Server::registerCommands() {
 		}
 	};
 
-	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
-		(void)client;
-		std::cout  << this->getPort() << ", JOIN Ignored" << std::endl;
-		for (const std::string& param : params) {
-			std::cout << "- " << param << std::endl;
-		}
-	};
+	// commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
+	// 	(void)client;
+	// 	std::cout  << this->getPort() << ", JOIN Ignored" << std::endl;
+	// 	for (const std::string& param : params) {
+	// 		std::cout << "- " << param << std::endl;
+	// 	}
+	// };
 
 	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePing(client, params);
@@ -32,7 +32,11 @@ void Server::registerCommands() {
 		handleNick(client, params);
     };
 
-	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
+    commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
+	    handleJoin(client, params);
+
+    };
+		commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleQuit(client, params);
     };
 
@@ -43,6 +47,73 @@ void Server::registerCommands() {
 	commands["PASS"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePass(client, params);
 	};
+
+}
+
+std::vector<std::string> split(const std::string& input, const char delmiter) {
+
+    std::vector<std::string> tokens; 
+    std::stringstream ss(input);
+
+    std::string token;
+    while (std::getline(ss, token, delmiter)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
+// CHANNEL ----- handle join command
+/**
+ * @breif Handles each requested channel from JOIN command.
+ */
+void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
+
+    //DEBUG
+    std::cout << "DEBUG: Entered handleJoin\n";
+    std::cout << "DEBUG: Client Nickname: " << client.getNickname() << "\n";
+	
+	
+	if (params.empty()) {
+    	//sendReply(client, "461 " + client.getNickname() + " JOIN :Not enough parameters\r\n");
+    	return;
+	}
+
+
+    std::vector<std::string>  requestedChannels = split(params[0], ',');
+    std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
+    
+    for (size_t i = 0; i < requestedChannels.size(); i++) {
+        const std::string& channelName = requestedChannels[i];
+        const std::string& channelKey = (i < keys.size()) ? keys[i] : "";
+
+		if (!Channel::isValidChannelName(channelName)) {
+			continue; // return;
+		}
+			 
+		
+		// -> How should we validate channel key..?
+
+        if (client.hasJoinedChannel(channelName)) {
+			 continue;
+		}
+               
+		Channel* channel = getChannel(channelName);
+		if (channel) {
+			if (!channel->checkChannelKey(channelKey)) {
+				std::cout << "Error: Keys do not match.\n";
+				continue; //return;
+			}
+			   std::cout << "Member " << client.getNickname() << " successfully joined key-protected channel: " << channelName << "\n";
+
+		} else {
+			channel = createChannel(channelName, channelKey);
+		}
+		
+        channel->addMember(&client);      // server-side  -> add client to channel
+        client.activeChannels(channelName);  // client side  -> track joined channels
+        //channel->broadcast(client.getNickname() + " has joined " + channelName);
+    }
 }
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
