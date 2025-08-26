@@ -17,6 +17,7 @@
 #include <sstream>		// for istringstream
 #include <functional>   // for std::function
 #include <algorithm>	// for transform
+#include <csignal>		// for signal
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 
@@ -61,6 +62,7 @@ class Server {
 		void startServer();			//-> The loop, that will keep the server running and do diff actions
 		void processBuffer(Client& client);
 		void registerCommands();
+		void closeServer();
 
 		int	getPort() const;
 		int getServerSocket() const;

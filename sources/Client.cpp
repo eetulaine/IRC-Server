@@ -2,7 +2,7 @@
 
 Client::Client(int clientFD, std::string clientIP, int epollFd)
 : clientFD_(clientFD), epollFd_(epollFd), nickname_(""), username_(""),
-  hostname_(clientIP), realName_(""), password_(""), authenticated_(false), connected_(true) {
+  hostname_(clientIP), realName_(""), password_(""), authenticated_(false), connected_(true), isPassValid_(false) {
 	std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
 	std::cout << "clientFD: " << clientFD_ << "\n";
 	std::cout << "hostname: " << hostname_ << "\n";
@@ -102,7 +102,7 @@ bool Client::isConnected() const {
 
 bool Client::isAuthenticated() {
 	if (realName_.empty() || username_.empty() || nickname_.empty()
-		|| password_.empty() || !clientFD_ || hostname_.empty()) {
+		|| password_.empty() || !isPassValid_ || !clientFD_ || hostname_.empty()) {
 		return false;
 	}
 	authenticated_ = true;
@@ -170,6 +170,10 @@ std::string Client::getClientIdentifier() const {
 	return (":" + nickname_ + "!" + username_ + "@" + hostname_);
 }
 
+bool Client::getIsPassValid() const {
+	return isPassValid_;
+}
+
 void Client::setHostname(std::string hostname) {
 	hostname_ = hostname;
 }
@@ -200,4 +204,8 @@ void Client::setConnected(bool connected) {
 
 void Client::setAuthenticated(bool authenticated) {
 	authenticated_ = authenticated;
+}
+
+void Client::setIsPassValid(bool isPassValid) {
+	isPassValid_ = isPassValid;
 }
