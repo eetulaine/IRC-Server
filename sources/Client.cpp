@@ -163,7 +163,7 @@ std::string Client::getReadBuffer() const {
 }
 
 bool Client::getIsAuthenticated() const {
-	return (this->isAuthenticated_);
+	return authenticated_;
 }
 
 std::string Client::getClientIdentifier() const {
