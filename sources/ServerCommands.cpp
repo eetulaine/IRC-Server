@@ -35,7 +35,6 @@ void Server::registerCommands() {
 	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleQuit(client, params);
     };
-	};
 
 	commands["USER"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleUser(client, params);
@@ -139,7 +138,7 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 	}
 	else {
 		client.setPassword(newPass);
-		client.authenticateClient();
+		client.isAuthenticated();
 	}
 
 	std::cout << "Client FD " << client.getClientFD()
