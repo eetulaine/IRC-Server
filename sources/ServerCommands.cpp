@@ -109,9 +109,10 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 	}
 	else
 	{
-		client.setUsername(newUser);
+		client.setUsername(newUser + std::to_string(client.getClientFD()));
 		client.setHostname(params[2]);
 		client.setRealName(params[3]);
+		messageHandle(RPL_WELCOME, client, "USER", params);
 
 	}
 	std::cout << "Client FD " << client.getClientFD()
@@ -138,7 +139,8 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 	}
 	else {
 		client.setPassword(newPass);
-		client.isAuthenticated();
+		client.setIsPassValid(true);
+		client.setAuthenticated(true);
 	}
 
 	std::cout << "Client FD " << client.getClientFD()
@@ -153,9 +155,11 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 		quitMessage = " QUIT :" + params[0] + "\r\n";
     if (!client.isConnected() || !client.isAuthenticated()) //no broadcasting from unconnected or unregistered clients
 		return;
-	/* === BROADCAST MESSAGE??===
 	quitMessage = ":" + client.getNickname() + "!" + 
 						client.getUsername() + "@" + 
-						client.getHostname() + quitMessage + "\r\n"; */
+						client.getHostname() + quitMessage + "\r\n";
+	client.appendSendBuffer(quitMessage);
+	clients_.erase(client.getClientFD());
+	closeServer();
 };
 
