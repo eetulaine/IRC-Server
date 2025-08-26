@@ -24,10 +24,6 @@ void Server::registerCommands() {
 		handlePing(client, params);
 	};
 
-	commands["PONG"] = [this](Client& client, const std::vector<std::string>& params) {
-		handlePong(client, params);
-	};
-
 	commands["NICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleNick(client, params);
     };
@@ -53,43 +49,61 @@ void Server::handlePing(Client& client, const std::vector<std::string>& params) 
 	if (params.empty()) {
 		messageHandle(ERR_NOORIGIN, client, "PING", params);
 	}
-	else if (params[0] != "IRCS") {
+	else if (params[0] != this->serverName_) {
 		messageHandle(ERR_NOSUCHSERVER, client, "PING", params);
 	}
 	else
 		messageHandle(RPL_PONG, client, "PING", params);
 }
 
-void Server::handlePong(Client& client, const std::vector<std::string>& params) {
-	if (params.empty()) {
-		messageHandle(ERR_NOORIGIN, client, "PING", params);
-	}
-	else if (params[0] != client.getClientIdentifier()) {
-		messageHandle(ERR_NOSUCHSERVER, client, "PING", params);
-	}
-}
-
 void Server::handleNick(Client& client, const std::vector<std::string>& params) {
 
 	// No nickname given
-	if (params.empty() || params[0].empty()) {
+	if (client.getNickname() == params[0]) {
+		return;
+	}
+	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
+		return;
 	}
-
-	const std::string& newNick = params[0];
-
-	// Nickname already in use
-	if (isNickDuplicate(newNick)) {
+	else if (isNickUserValid("NICK", params[0])) {
+		messageHandle(ERR_ERRONEUSNICKNAME, client, "NICK", params);
+		return;
+	}
+	else if (isNickDuplicate(params[0])) {
 		messageHandle(ERR_NICKNAMEINUSE, client, "NICK", params);
+		return;
 	}
 
-	// Valid nickname
-	client.setNickname(newNick);
+	if (client.isAuthenticated())
+	{
+		std::string oldNick = client.getNickname();
+		client.setNickname(params[0]);
+		std::string replyMsg = std::to_string(client.getClientFD()) + ":" + oldNick + "!user@host NICK :" + client.getNickname();
+		client.appendSendBuffer(replyMsg);
+	}
+	else
+		client.setNickname(params[0]);
+
 	std::cout << "Client FD " << client.getClientFD()
 				<< ", nickname set to: " << client.getNickname() << std::endl;
 
 }
 
+
+bool Server::isNickUserValid(std::string cmd, std::string name) {
+	if (cmd == "NICK") {
+		std::regex nickName_regex(R"(^([A-Za-z\[\]\\`_^{}|])(?![$:#&~@+%])[-A-Za-z0-9\[\]\\`_^{}|]{0,8}$)");
+		if (std::regex_match(name, nickName_regex) == false)
+			return (FAIL);
+	}
+	else if (cmd == "USER") {
+		std::regex userName_regex(R"(^[^\s@]{1,10}$)");
+		if (std::regex_match(name, userName_regex) == false)
+			return (FAIL);
+	}
+	return (SUCCESS);
+}
 
 void Server::handleUser(Client& client, const std::vector<std::string>& params) {
 
@@ -155,8 +169,8 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 		quitMessage = " QUIT :" + params[0] + "\r\n";
     if (!client.isConnected() || !client.isAuthenticated()) //no broadcasting from unconnected or unregistered clients
 		return;
-	quitMessage = ":" + client.getNickname() + "!" + 
-						client.getUsername() + "@" + 
+	quitMessage = ":" + client.getNickname() + "!" +
+						client.getUsername() + "@" +
 						client.getHostname() + quitMessage + "\r\n";
 	client.appendSendBuffer(quitMessage);
 	clients_.erase(client.getClientFD());
