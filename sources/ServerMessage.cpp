@@ -57,11 +57,35 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	return (message);
 }
 
-
 void Server::messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params) {
 	if (!code)
 		return ;
 	std::string message = createMessage(code, client, cmd, params);
 	client.appendSendBuffer(message);
 }
+
+void Server::messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params) {
+
+	std::vector<int> responseCodes = {
+		RPL_WELCOME,
+		RPL_YOURHOST,
+		RPL_CREATED,
+		RPL_MYINFO
+		//RPL_ISUPPORT
+	};
+
+	for (int code : responseCodes) {
+		std::string message = createMessage(code, client, cmd, params);
+		client.appendSendBuffer(message);
+	}
+}
+
+// for channel msg
+
+// void Server::messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params) {
+// 	if (!code)
+// 		return ;
+// 	std::string message = createMessage(code, client, cmd, params);
+// 	client.appendSendBuffer(message);
+// }
 
