@@ -82,7 +82,7 @@ void Client::activeChannels(const std::string &channelName) {
 
 	auto status = joinedChannels_.insert(channelName);
 	if (status.second)
-		std::cout << GREEN << "Successfully joined channel: " << channelName << "!\n" << END_COLOR;
+		std::cout << "Channel <" << channelName << "> is added to client's active channels\n";
 	else
 		std::cout << "Client is already a member of channel: " << channelName << "\n";
 }

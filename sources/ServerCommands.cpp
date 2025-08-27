@@ -69,11 +69,6 @@ std::vector<std::string> split(const std::string& input, const char delmiter) {
  */
 void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
 
-    //DEBUG
-    std::cout << "DEBUG: Entered handleJoin\n";
-    std::cout << "DEBUG: Client Nickname: " << client.getNickname() << "\n";
-	
-	
 	if (params.empty()) {
     	//sendReply(client, "461 " + client.getNickname() + " JOIN :Not enough parameters\r\n");
     	return;
@@ -83,11 +78,23 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
     std::vector<std::string>  requestedChannels = split(params[0], ',');
     std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
     
+	//for debugging
+	std::cout << "=== DEBUG ===\n";
+	for (size_t i = 0; i < keys.size(); i++) {
+		std::cout << RED << "KEYS[" << i << "] -> " << keys[i] << END_COLOR << "\n"; 
+	}
+	for (size_t i = 0; i < requestedChannels.size(); i++) {
+		std::cout << RED << "CHANNELS[" << i << "] -> " << requestedChannels[i] << END_COLOR << "\n"; 
+	}
+	
+		
     for (size_t i = 0; i < requestedChannels.size(); i++) {
         const std::string& channelName = requestedChannels[i];
         const std::string& channelKey = (i < keys.size()) ? keys[i] : "";
-
-		if (!Channel::isValidChannelName(channelName)) {
+	
+	
+		if (Channel::isValidChannelName(channelName) == false) {
+			std::cout << "Error: Invalid channel name: " << channelName << ">\n";
 			continue; // return;
 		}
 			 
@@ -95,16 +102,17 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		// -> How should we validate channel key..?
 
         if (client.hasJoinedChannel(channelName)) {
-			 continue;
+			std::cout << "Clinet <" << client.getNickname() << "> is already a member at channel <" << channelName << "\n";
+			continue;
 		}
-               
+
 		Channel* channel = getChannel(channelName);
 		if (channel) {
 			if (!channel->checkChannelKey(channelKey)) {
 				std::cout << "Error: Keys do not match.\n";
 				continue; //return;
 			}
-			   std::cout << "Member " << client.getNickname() << " successfully joined key-protected channel: " << channelName << "\n";
+			std::cout << "Member " << client.getNickname() << " successfully entered key for <" << channelName << ">!\n";
 
 		} else {
 			channel = createChannel(channelName, channelKey);

@@ -154,6 +154,8 @@ void Server::processBuffer(Client& client) {
 		}
 		it->second(client, params);
 	}
+	//for debugging
+	std::cout << RED << "[DEBUG] Buffer after processing: '" << buf << END_COLOR << "'\n";
 	client.setBuffer(buf);
 }
 
