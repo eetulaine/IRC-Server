@@ -1,7 +1,7 @@
 #include "Channel.hpp"
 
 Channel::Channel(const std::string &name, const std::string& key)
-	: name_(name), key_(), keyProtected_(false) {
+	: name_(name), key_(""), keyProtected_(false) {
 	
 	std::cout << GREEN "=== CHANNEL CREATED ===\n" END_COLOR;
 
@@ -10,8 +10,12 @@ Channel::Channel(const std::string &name, const std::string& key)
 		setChannelKey(key);
 		std::cout << "Password: " << key_ << "\n";
 	}
-	else
+	else {
 		std::cout << "Password: Not provided\n";
+		// keyProtected_ == false;
+	}
+	std::cout << "Key length [" << key_.size() << "]\n";
+		
 		
 }
 
@@ -26,7 +30,7 @@ void Channel::addMember(Client *client) {
 
 	auto status = members_.insert(client);
 	if (status.second)
-		std::cout << GREEN << "Member <" << client->getNickname() << "> is successfully added to channel< " << name_ << ">\n" << END_COLOR;
+		std::cout << "Member <" << client->getNickname() << "> is successfully added to channel <" << name_ << ">\n";
 	else
 		std::cout << "Member <" << client->getNickname() << "> already exists in the channel\n";
 
@@ -73,7 +77,7 @@ bool Channel::isValidChannelName(const std::string& name) {
 
 	if (name.empty() || name.size() > 50)
 		return false;
-	if ((name[0] != '#' && name[0] != '&'))
+	if (name[0] != '#' && name[0] != '&')
 		return false;
 
 	static const std::string inavalidChar = " ,\a:";
@@ -89,7 +93,8 @@ bool Channel::isValidChannelName(const std::string& name) {
 void Channel::setChannelKey(const std::string& key) {
 
 	key_ = key;
-	keyProtected_ = true;
+	//keyProtected_ = true;
+	keyProtected_ = !key.empty();
 }
 
 std::string Channel::getChannelName() const {
