@@ -3,9 +3,10 @@
 Client::Client(int clientFD, std::string clientIP, int epollFd)
 : clientFD_(clientFD), epollFd_(epollFd), nickname_(""), username_(""),
   hostname_(clientIP), realName_(""), password_(""), authenticated_(false), connected_(true), isPassValid_(false) {
-	std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
-	std::cout << "clientFD: " << clientFD_ << "\n";
-	std::cout << "hostname: " << hostname_ << "\n";
+	//std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
+	//std::cout << "clientFD: " << clientFD_ << "\n";
+	//std::cout << "hostname: " << hostname_ << "\n";
+	logMessage(INFO, "CLIENT", "New client created. ClientFD[" + std::to_string(clientFD_) + "]");
 }
 
 Client::~Client() {
