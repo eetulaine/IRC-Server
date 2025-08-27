@@ -36,7 +36,7 @@ void Server::registerCommands() {
 	    handleJoin(client, params);
 
     };
-		commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
+	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleQuit(client, params);
     };
 
@@ -247,5 +247,6 @@ void Server::closeClient(Client& client) {
     ev.data.fd = clientfd;
 	epoll_ctl(epollfd, EPOLL_CTL_DEL, clientfd, &ev);
 	close(clientfd);
-	clients_.erase(clientfd);
+	if (clients_[clientfd])
+		clients_.erase(clientfd);
 }
