@@ -9,11 +9,12 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	setSocketOption();
 	bindSocket();
 	initListen();
-	std::cout << GREEN "\n=== SERVER CREATED ===\n" END_COLOR;
-	std::cout << "Port: " << port_ << "\n";
-	std::cout << "Pass: " << password_ << "\n";
-	std::cout << "Sock: " << serverSocket_ << "\n\n";
+	// std::cout << GREEN "\n=== SERVER CREATED ===\n" END_COLOR;
+	// std::cout << "Port: " << port_ << "\n";
+	// std::cout << "Pass: " << password_ << "\n";
+	//  std::cout << "Sock: " << serverSocket_ << "\n\n";
 
+	logMessage(INFO, "SERVER", "Server created. PORT[ " + std::to_string(port_) + " ] PASSWORD[ " + password_ + " ]");
 	registerCommands();
 }
 
@@ -66,8 +67,8 @@ void Server::setNonBlocking() {
 
 void Server::startServer()
 {
+	logMessage(INFO, "SERVER", "Server started. SOCKET [ " + std::to_string(serverSocket_) + " ]");
 	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
-	std::cout << GREEN "=== SERVER STARTED ===" END_COLOR << "\nepoll fd: " << epollFd << "\n\n";
 
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
@@ -81,8 +82,7 @@ void Server::startServer()
 	}
 
 	struct epoll_event epEventList[MAX_EVENTS];
-
-	std::cout << GREEN "Waiting for events...\n" END_COLOR;
+	logMessage(INFO, "SERVER", "Waiting for events. ServerFD [ " + std::to_string(epollFd) + " ]");
 	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
@@ -95,7 +95,6 @@ void Server::startServer()
 			for (int i = 0; i < epActiveSockets; ++i)
 			{
 				if (epEventList[i].data.fd == serverSocket_) {
-					std::cout << "server Socket END" << std::endl;
 					acceptNewClient(epollFd);
 				}
 				else if (epEventList[i].events & EPOLLIN) {
@@ -104,10 +103,9 @@ void Server::startServer()
 				else if (epEventList[i].events & EPOLLOUT) {
 					sendData(epEventList[i].data.fd);
 				}
-				usleep(10000); // use for debugging -remove later***
+				//usleep(10000); // use for debugging -remove later***
 			}
 		}
-		//std::cout << YELLOW "still waiting...\n" END_COLOR;
 	}
 }
 
@@ -205,19 +203,16 @@ void Server::acceptNewClient(int epollFd)
 	else
 	{
 		//usleep(10000);
-		//std::cout << "Client FD :" << clientFd << std::endl; // remove later***
 		if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) { // Make client non-blocking
 			close(clientFd);
 			throw std::runtime_error("fcntl() failed for client");
 		}
-		//std::cout << "Client is now non blocking" << std::endl; std::cout << "Client IP from NEWClient: " << clientIP << std::endl;
 		std::string clientIP = getClientIP(clientSocAddr);
 		if (clientIP.empty()) {
 			close(clientFd);
 			throw std::runtime_error("Failed to retrieve client IP");
 		}
 
-		//std::cout << "Client IP from NEWClient: " << clientIP << std::endl;  // remove later***
 		// Prepare epoll_event for this client
 		struct epoll_event clientEvent;
 		clientEvent.events = EPOLLIN; // start listening for read events
@@ -227,9 +222,9 @@ void Server::acceptNewClient(int epollFd)
 			close(clientFd);
 			throw std::runtime_error("epoll_ctl() failed for client");
 		}
-		//std::cout << "Client added to epoll event" << std::endl; // remove later***
 		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
 		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd); // what about client Index 0-3??*****
+		//logMessage(INFO, "CLIENT", "New client accepted. ClientFD [ " + clientFd + " ]");
 	}
 }
 

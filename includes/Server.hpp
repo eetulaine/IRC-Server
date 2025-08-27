@@ -19,6 +19,8 @@
 #include <algorithm>	// for transform
 #include <csignal>		// for signal
 #include <regex>
+#include <ctime>
+#include <iomanip>  // put_time
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 
@@ -87,8 +89,11 @@ class Server {
 
 		// Message
 		void messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+		void messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
 
   // CHANNEL
 		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
 };
+
+void logMessage(logMsgType type, const std::string &action, const std::string &msg);
