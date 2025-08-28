@@ -6,3 +6,12 @@ CLIENT Validation??
 
 MSG Limit
 - http://chi.cs.uchicago.edu/chirc/irc.html
+
+
+JOIN messsage:
+- 	ERR_NEEDMOREPARAMS              ERR_BANNEDFROMCHAN
+   ERR_INVITEONLYCHAN              ERR_BADCHANNELKEY
+   ERR_CHANNELISFULL               ERR_BADCHANMASK
+   ERR_NOSUCHCHANNEL               ERR_TOOMANYCHANNELS
+   ERR_TOOMANYTARGETS              ERR_UNAVAILRESOURCE
+   RPL_TOPIC
