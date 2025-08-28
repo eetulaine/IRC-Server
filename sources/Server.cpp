@@ -2,6 +2,8 @@
 #include "../includes/Client.hpp"
 #include "../includes/responseCodes.hpp"
 
+bool isRunning_ = true; // change the value to true when it start
+
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
 	createAddrInfo();
@@ -27,12 +29,13 @@ Server::~Server() {
 }
 
 void Server::closeServer() {
-if (serverSocket_ >= 0) {
+	if (serverSocket_ >= 0) {
 		close(serverSocket_);
 	}
 	password_.clear();
 	signal(SIGINT, SIG_DFL);
 	signal(SIGTSTP, SIG_DFL);
+	isRunning_ = false;
 	exit(0);
 }
 
@@ -83,8 +86,10 @@ void Server::startServer()
 	}
 
 	struct epoll_event epEventList[MAX_EVENTS];
+
 	logMessage(INFO, "SERVER", "Waiting for events. ServerFD[" + std::to_string(epollFd) + "]");
-	while(true) {
+
+	while(isRunning_) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
 		// handle SIGINT;
@@ -128,15 +133,7 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 		}
 	return {cmd, params};
 }
-// CHANNEL ----- handle join command
-// void Server::handleJoinCommand(Client& client, const std::vector<std::string>& params) {
-//     std::cout << "DEBUG: Entered handleJoinCommand\n";
-//     std::cout << "DEBUG: Client Nickname: " << client.getNickname() << "\n";
-//     std::cout << "DEBUG: Number of parameters: " << params.size() << "\n";
-//     for (const auto& param : params) {
-//         std::cout << "DEBUG: Param: " << param << "\n";
-//     }
-// }
+
 
 void Server::processBuffer(Client& client) {
 	std::string buf = client.getReadBuffer();
@@ -150,6 +147,8 @@ void Server::processBuffer(Client& client) {
         std::vector<std::string> params = parsed.second;
 		std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
 
+		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
+			return handleQuit(client, params);
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
 			logMessage(WARNING, "COMMAND", "Unknown command: [" + commandStr + "] param[0]: " + params[0] + std::to_string(client.getClientFD()));
@@ -158,6 +157,8 @@ void Server::processBuffer(Client& client) {
 		}
 		it->second(client, params);
 	}
+	//for debugging
+	std::cout << RED << "[DEBUG] Buffer after processing: '" << buf << END_COLOR << "'\n";
 	client.setBuffer(buf);
 }
 

@@ -11,11 +11,11 @@ void Server::registerCommands() {
 		logMessage(WARNING, "CAP", "CAP command ignored. ClientFD: " + std::to_string(client.getClientFD()));
 	};
 
-	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
-		(void)params;
-		(void)this;
-		logMessage(WARNING, "JOIN", "JOIN command ignored. ClientFD: " + std::to_string(client.getClientFD()));
-	};
+// 	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
+// 		(void)params;
+// 		(void)this;
+// 		logMessage(WARNING, "JOIN", "JOIN command ignored. ClientFD: " + std::to_string(client.getClientFD()));
+// 	};
 
 	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePing(client, params);
@@ -25,6 +25,10 @@ void Server::registerCommands() {
 		handleNick(client, params);
     };
 
+    commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
+	    handleJoin(client, params);
+
+    };
 	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleQuit(client, params);
     };
@@ -40,6 +44,81 @@ void Server::registerCommands() {
 	commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleMode(client, params);
 	};
+
+}
+
+std::vector<std::string> split(const std::string& input, const char delmiter) {
+
+    std::vector<std::string> tokens; 
+    std::stringstream ss(input);
+
+    std::string token;
+    while (std::getline(ss, token, delmiter)) {
+        tokens.push_back(token);
+    }
+
+    return tokens;
+}
+
+// CHANNEL ----- handle join command
+/**
+ * @breif Handles each requested channel from JOIN command.
+ */
+void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
+
+	if (params.empty()) {
+    	//sendReply(client, "461 " + client.getNickname() + " JOIN :Not enough parameters\r\n");
+    	return;
+	}
+
+
+    std::vector<std::string>  requestedChannels = split(params[0], ',');
+    std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
+    
+	//for debugging
+	std::cout << "=== DEBUG ===\n";
+	for (size_t i = 0; i < keys.size(); i++) {
+		std::cout << RED << "KEYS[" << i << "] -> " << keys[i] << END_COLOR << "\n"; 
+	}
+	for (size_t i = 0; i < requestedChannels.size(); i++) {
+		std::cout << RED << "CHANNELS[" << i << "] -> " << requestedChannels[i] << END_COLOR << "\n"; 
+	}
+	
+		
+    for (size_t i = 0; i < requestedChannels.size(); i++) {
+        const std::string& channelName = requestedChannels[i];
+        const std::string& channelKey = (i < keys.size()) ? keys[i] : "";
+	
+	
+		if (Channel::isValidChannelName(channelName) == false) {
+			std::cout << "Error: Invalid channel name: " << channelName << ">\n";
+			continue; // return;
+		}
+			 
+		
+		// -> How should we validate channel key..?
+
+        if (client.hasJoinedChannel(channelName)) {
+			std::cout << "Clinet <" << client.getNickname() << "> is already a member at channel <" << channelName << "\n";
+			continue;
+		}
+
+		Channel* channel = getChannel(channelName);
+		if (channel) {
+			if (!channel->checkChannelKey(channelKey)) {
+				std::cout << "Error: Keys do not match.\n";
+				continue; //return;
+			}
+			std::cout << "Member " << client.getNickname() << " successfully entered key for <" << channelName << ">!\n";
+
+		} else {
+			channel = createChannel(channelName, channelKey);
+		}
+		
+        channel->addMember(&client);      // server-side  -> add client to channel
+        client.activeChannels(channelName);  // client side  -> track joined channels
+        //channel->broadcast(client.getNickname() + " has joined " + channelName);
+    }
 }
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
@@ -159,22 +238,42 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-	(void)client;
+
 	std::cout << "Handling QUIT command. Parameters: " << std::endl;
-	std::string quitMessage = "Client quit\r\n";
-	if (!params.empty())
-		quitMessage = " QUIT :" + params[0] + "\r\n";
-    if (!client.isConnected() || !client.isAuthenticated()) //no broadcasting from unconnected or unregistered clients
+    if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
+		closeClient(client);
 		return;
-	quitMessage = ":" + client.getNickname() + "!" +
-						client.getUsername() + "@" +
+
+	}
+	std::string quitMessage = "Client quit";
+	if (!params.empty())
+		quitMessage = " QUIT :" + params[0];
+	quitMessage = ":" + client.getNickname() + "!" + 
+						client.getUsername() + "@" + 
 						client.getHostname() + quitMessage + "\r\n";
 	client.appendSendBuffer(quitMessage);
-	clients_.erase(client.getClientFD());
-	closeServer();
+	client.sendData();
+	closeClient(client);
 };
+
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
 	messageHandle(ERR_UMODEUNKNOWNFLAG, client, "PASS", params);
 	logMessage(WARNING, "MODE", "Testing mode command. ClientFD: " + std::to_string(client.getClientFD()));
-};
+}
+
+void Server::closeClient(Client& client) {
+
+	int clientfd = client.getClientFD();
+	int epollfd = client.getEpollFd();
+	client.setConnected(false);
+
+	struct epoll_event ev;
+    ev.events = EPOLLIN;
+    ev.data.fd = clientfd;
+	epoll_ctl(epollfd, EPOLL_CTL_DEL, clientfd, &ev);
+	close(clientfd);
+	if (clients_[clientfd])
+		clients_.erase(clientfd);
+}
+
