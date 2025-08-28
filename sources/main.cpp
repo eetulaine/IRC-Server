@@ -28,7 +28,7 @@ int portValidation(const std::string &_port)
 
 int main(int argc, char **argv)
 {
-	logMessage(INFO, "Main", "Program started");
+	logMessage(INFO, "MAIN", "Program started");
 	try
 	{
 		if (argc != 3)
@@ -37,15 +37,15 @@ int main(int argc, char **argv)
 		int port = portValidation(argv[1]);
 		if (!isPasswordValid(argv[2]))
 			throw std::runtime_error("Invalid password");
-
+		logMessage(INFO, "MAIN", "Validation Done");
 		Server ircserv(port, argv[2]);
 		ircserv.startServer();
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(ERRORR, "Main", e.what());
+		logMessage(ERRORR, "MAIN", e.what());
 		return (1);
 	}
-	logMessage(INFO, "Main", "Server activity finished");
+	logMessage(INFO, "MAIN", "Server activity finished");
 	return (0);
 }
