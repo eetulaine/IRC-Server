@@ -1,5 +1,6 @@
 #include "../includes/Server.hpp"
 #include "../includes/Client.hpp"
+#include "../includes/responseCodes.hpp"
 
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
@@ -14,7 +15,7 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	// std::cout << "Pass: " << password_ << "\n";
 	//  std::cout << "Sock: " << serverSocket_ << "\n\n";
 
-	logMessage(INFO, "SERVER", "Server created. PORT[ " + std::to_string(port_) + " ] PASSWORD[ " + password_ + " ]");
+	logMessage(INFO, "SERVER", "Server created. PORT[" + std::to_string(port_) + "] PASSWORD[" + password_ + "]");
 	registerCommands();
 }
 
@@ -67,7 +68,7 @@ void Server::setNonBlocking() {
 
 void Server::startServer()
 {
-	logMessage(INFO, "SERVER", "Server started. SOCKET [ " + std::to_string(serverSocket_) + " ]");
+	logMessage(INFO, "SERVER", "Server started. SOCKET[" + std::to_string(serverSocket_) + "]");
 	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
 
 	if (epollFd < 0) {
@@ -82,7 +83,7 @@ void Server::startServer()
 	}
 
 	struct epoll_event epEventList[MAX_EVENTS];
-	logMessage(INFO, "SERVER", "Waiting for events. ServerFD [ " + std::to_string(epollFd) + " ]");
+	logMessage(INFO, "SERVER", "Waiting for events. ServerFD[" + std::to_string(epollFd) + "]");
 	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
@@ -151,8 +152,8 @@ void Server::processBuffer(Client& client) {
 
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
-			std::cout << "UNKNOWN COMMAND: " << commandStr << "\n";
-			//sendReply(RPL_UNKNOWN_COMMAND)??;
+			logMessage(WARNING, "COMMAND", "Unknown command: [" + commandStr + "] param[0]: " + params[0] + std::to_string(client.getClientFD()));
+			messageHandle(ERR_UNKNOWNCOMMAND, client, commandStr, params);
 			continue;
 		}
 		it->second(client, params);
