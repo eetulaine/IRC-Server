@@ -19,7 +19,15 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	message += std::to_string(code) + " " + client.getNickname() + " ";
 
 	if (code == RPL_WELCOME) {
-		message += ":Welcome to the Internet Relay Network " + client.getClientIdentifier();
+		message += ":Welcome to the " + this->getServerName() + " " + client.getClientIdentifier();
+	} else if (code == RPL_YOURHOST) {
+		message += "Your host is " + client.getHostname();
+	} else if (code == RPL_CREATED) {
+		message += this->getServerName() + " was created today";
+	} else if (code == RPL_MYINFO) {
+		message += this->getServerName() + ": Version 1.0";
+	} else if (code == RPL_ISUPPORT) {
+		message += this->getServerName() + " supports.......";
 	} else if (code == ERR_NEEDMOREPARAMS) {
 		message += cmd + " :Not enough parameters";
 	} else if (code == ERR_PASSWDMISMATCH) {
@@ -42,6 +50,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += paramString + " :No such server";
 	} else if (code == ERR_NORECIPIENT) {
 		message += ":No recipient given";
+	} else if (code == ERR_UMODEUNKNOWNFLAG) {
+		message += "Unknown MODE flag";
 	} else if (code == RPL_WHOISUSER) {
 		message += paramString;
 	} else if (code == RPL_PONG) {
@@ -70,8 +80,8 @@ void Server::messageHandle(Client &client, std::string cmd, const std::vector<st
 		RPL_WELCOME,
 		RPL_YOURHOST,
 		RPL_CREATED,
-		RPL_MYINFO
-		//RPL_ISUPPORT
+		RPL_MYINFO,
+		RPL_ISUPPORT // optional
 	};
 
 	for (int code : responseCodes) {
