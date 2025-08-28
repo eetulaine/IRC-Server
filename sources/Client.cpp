@@ -3,9 +3,10 @@
 Client::Client(int clientFD, std::string clientIP, int epollFd)
 : clientFD_(clientFD), epollFd_(epollFd), nickname_(""), username_(""),
   hostname_(clientIP), realName_(""), password_(""), authenticated_(false), connected_(true), isPassValid_(false) {
-	std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
-	std::cout << "clientFD: " << clientFD_ << "\n";
-	std::cout << "hostname: " << hostname_ << "\n";
+	//std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
+	//std::cout << "clientFD: " << clientFD_ << "\n";
+	//std::cout << "hostname: " << hostname_ << "\n";
+	logMessage(INFO, "CLIENT", "New client created. ClientFD[" + std::to_string(clientFD_) + "]");
 }
 
 Client::~Client() {
@@ -24,7 +25,7 @@ int Client::receiveData() {
 
     std::string received(buffer, bytesRead);
 		addReadBuffer(received);
-		std::cout << readBuffer_ << "\n";
+		//std::cout << readBuffer_ << "\n";
 		return SUCCESS;
 	}
 	else if (!bytesRead) {
@@ -54,7 +55,7 @@ bool Client::sendData() {
 // After successfull msg process method will call appendSendBuffer to create EPOLLOUT event
 void Client::appendSendBuffer(std::string sendMsg) {
 	this->sendBuffer_.append(sendMsg);
-	std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
+	//std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
 	epollEventChange(EPOLLOUT);
 }
 
@@ -64,11 +65,11 @@ void Client::addReadBuffer(const std::string& received) {
 
 // Method to change EPOLL IN/OUT event depending on client request
 void Client::epollEventChange(uint32_t eventType) {
-	std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
+	//std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
 	struct epoll_event newEvent;
 	newEvent.events = eventType;
 	newEvent.data.fd = this->getClientFD();
-	std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
+	//std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
 
 	if (epoll_ctl(this->epollFd_, EPOLL_CTL_MOD, newEvent.data.fd, &newEvent) < 0) {
 		this->sendBuffer_.clear();
@@ -77,6 +78,7 @@ void Client::epollEventChange(uint32_t eventType) {
 
 }
 //------ CHANNEL --------
+
 // method to store joined channels
 void Client::activeChannels(const std::string &channelName) {
 
@@ -119,7 +121,7 @@ bool Client::isAuthenticated() {
 // ========================
 
 bool Client::isSocketValid() const {
-	if (clientFD_ < 0) 
+	if (clientFD_ < 0)
 		return false;
 
 	// Use send with MSG_NOSIGNAL to test if socket is alive

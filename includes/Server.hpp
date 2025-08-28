@@ -18,6 +18,9 @@
 #include <functional>   // for std::function
 #include <algorithm>	// for transform
 #include <csignal>		// for signal
+#include <regex>
+#include <ctime>
+#include <iomanip>  // put_time
 #include "../includes/macros.hpp"
 #include "../includes/Client.hpp"
 #include "../includes/Channel.hpp"
@@ -77,9 +80,10 @@ class Server {
 		std::string getServerName() const;
 
 		/// dependent Methods for commands
-		bool stringCompCaseIgnore(const std::string &str1, const std::string &str2);
+		bool	stringCompCaseIgnore(const std::string &str1, const std::string &str2);
 		bool	isUserDuplicate(std::string  userName);
 		bool	isNickDuplicate(std::string  userName);
+		bool	isNickUserValid(std::string cmd, std::string name);
 
 		// commands
 		void handleNick(Client& client, const std::vector<std::string>& params);
@@ -93,12 +97,17 @@ class Server {
 		void handleUser(Client& client, const std::vector<std::string>& params);
 		void handlePass(Client& client, const std::vector<std::string>& params);
 		void handlePing(Client& client, const std::vector<std::string>& params);
-		void handlePong(Client& client, const std::vector<std::string>& params);
-    	void handleQuit(Client& client, const std::vector<std::string>& params);
+	  void handleQuit(Client& client, const std::vector<std::string>& params);
+		void handleMode(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
 		// Message
 		void messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+		void messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+  // CHANNEL
+		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
 
 };
+
+void logMessage(logMsgType type, const std::string &action, const std::string &msg);

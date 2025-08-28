@@ -14,3 +14,5 @@
 #define MAX_EVENTS 42
 #define MAX_MSG_LEN 512
 #define BUF_SIZE 1024
+
+enum logMsgType { INFO, WARNING, ERRORR };

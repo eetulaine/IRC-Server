@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <regex>
 #include "../includes/Server.hpp"
+#include "../includes/macros.hpp"
 //#include <exception>
 
 bool isPasswordValid(const std::string &password)
@@ -27,25 +28,24 @@ int portValidation(const std::string &_port)
 
 int main(int argc, char **argv)
 {
+	logMessage(INFO, "MAIN", "Program started");
 	try
 	{
 		if (argc != 3)
 			throw std::runtime_error("Invalid number of arguments");
 
 		int port = portValidation(argv[1]);
-
 		if (!isPasswordValid(argv[2]))
 			throw std::runtime_error("Invalid password");
+		logMessage(INFO, "MAIN", "Validation Done");
 		Server ircserv(port, argv[2]);
 		ircserv.startServer();
-
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << RED "[Error] " END_COLOR;
-		std::cerr << e.what() << std::endl;
+		logMessage(ERRORR, "MAIN", e.what());
 		return (1);
 	}
-	std::cout << "Star Sarver init" << std::endl;
+	logMessage(INFO, "MAIN", "Server activity finished");
 	return (0);
 }
