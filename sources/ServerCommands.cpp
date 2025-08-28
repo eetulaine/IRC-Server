@@ -6,19 +6,15 @@ void Server::registerCommands() {
 	// command CAP will be ignored
 
 	commands["CAP"] = [this](Client& client, const std::vector<std::string>& params) {
-		(void)client;
-		std::cout << this->getPort() << ", CAP Ignored" << std::endl;
-		for (const std::string& param : params) {
-			std::cout << "- " << param << std::endl;
-		}
+		(void)params;
+		(void)this;
+		logMessage(WARNING, "CAP", "CAP command ignored. ClientFD: " + std::to_string(client.getClientFD()));
 	};
 
 	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
-		(void)client;
-		std::cout  << this->getPort() << ", JOIN Ignored" << std::endl;
-		for (const std::string& param : params) {
-			std::cout << "- " << param << std::endl;
-		}
+		(void)params;
+		(void)this;
+		logMessage(WARNING, "JOIN", "JOIN command ignored. ClientFD: " + std::to_string(client.getClientFD()));
 	};
 
 	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
@@ -39,6 +35,10 @@ void Server::registerCommands() {
 
 	commands["PASS"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePass(client, params);
+	};
+
+	commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleMode(client, params);
 	};
 }
 
@@ -66,7 +66,7 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 	}
 	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
-		logMessage(ERRORR, "NICK", "No nickname given. Client FD: " + client.getClientFD());
+		logMessage(ERRORR, "NICK", "No nickname given. Client FD: " + std::to_string(client.getClientFD()));
 		return;
 	}
 	else if (isNickUserValid("NICK", params[0])) {
@@ -93,7 +93,7 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 		logMessage(INFO, "NICK", "Nickname set to " + client.getNickname());
 		if (client.isAuthenticated()) {
 			messageHandle(client, "USER", params);
-			logMessage(INFO, "Registration", "Client registration is successful. Username: " + client.getUsername());
+			logMessage(INFO, "REGISTRATION", "Client registration is successful. Username: " + client.getUsername());
 		}
 	}
 }
@@ -102,12 +102,12 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 
 	if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params); // what code to use??
-		logMessage(ERRORR, "USER", "No username given. Client FD: " + client.getClientFD());
+		logMessage(ERRORR, "USER", "No username given. Client FD: " + std::to_string(client.getClientFD()));
 		return;
 	}
 	else if (params.size() != 4) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
-		logMessage(ERRORR, "USER", "Not enough parameters. Client FD: " + client.getClientFD());
+		logMessage(ERRORR, "USER", "Not enough parameters. Client FD: " + std::to_string(client.getClientFD()));
 		return;
 	}
 	else if (isUserDuplicate(params[0])) {
@@ -128,7 +128,7 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 		logMessage(INFO, "USER", "Username and details are set. Username: " + client.getUsername());
 		if (client.isAuthenticated()) {
 			messageHandle(client, "USER", params);
-			logMessage(INFO, "Registration", "Client registration is successful. Username: " + client.getUsername());
+			logMessage(INFO, "REGISTRATION", "Client registration is successful. Username: " + client.getUsername());
 		}
 	}
 }
@@ -155,7 +155,7 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 		client.setIsPassValid(true);
 		client.setAuthenticated(true); // check logic
 	}
-	logMessage(INFO, "PASS", "Client authentication completed. ClientFD: " + client.getClientFD());
+	logMessage(INFO, "PASS", "Client authentication completed. ClientFD: " + std::to_string(client.getClientFD()));
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
@@ -174,3 +174,7 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 	closeServer();
 };
 
+void Server::handleMode(Client& client, const std::vector<std::string>& params) {
+	messageHandle(ERR_UMODEUNKNOWNFLAG, client, "PASS", params);
+	logMessage(WARNING, "MODE", "Testing mode command. ClientFD: " + std::to_string(client.getClientFD()));
+};
