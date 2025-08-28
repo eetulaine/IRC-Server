@@ -25,7 +25,7 @@ int Client::receiveData() {
 
     std::string received(buffer, bytesRead);
 		addReadBuffer(received);
-		std::cout << readBuffer_ << "\n";
+		//std::cout << readBuffer_ << "\n";
 		return SUCCESS;
 	}
 	else if (!bytesRead) {
@@ -55,7 +55,7 @@ bool Client::sendData() {
 // After successfull msg process method will call appendSendBuffer to create EPOLLOUT event
 void Client::appendSendBuffer(std::string sendMsg) {
 	this->sendBuffer_.append(sendMsg);
-	std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
+	//std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
 	epollEventChange(EPOLLOUT);
 }
 
@@ -65,11 +65,11 @@ void Client::addReadBuffer(const std::string& received) {
 
 // Method to change EPOLL IN/OUT event depending on client request
 void Client::epollEventChange(uint32_t eventType) {
-	std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
+	//std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
 	struct epoll_event newEvent;
 	newEvent.events = eventType;
 	newEvent.data.fd = this->getClientFD();
-	std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
+	//std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
 
 	if (epoll_ctl(this->epollFd_, EPOLL_CTL_MOD, newEvent.data.fd, &newEvent) < 0) {
 		this->sendBuffer_.clear();
