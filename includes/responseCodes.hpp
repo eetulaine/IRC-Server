@@ -14,10 +14,11 @@
 #define	RPL_MYINFO 004
 // <servername> <version> <available user modes> <available channel modes>"
 
+#define RPL_ISUPPORT 005
+
 #define RPL_WHOISUSER 311
 
 #define RPL_PONG 399
-
 
 // ****************ERROR CODES************** //
 
@@ -49,6 +50,11 @@
 #define ERR_NOSUCHSERVER 402
 
 #define ERR_UNKNOWNCOMMAND 421
+
 #define ERR_NOORIGIN 409
 #define ERR_NORECIPIENT 411
+
+#define ERR_UMODEUNKNOWNFLAG 501
+
+#define RPL_UMODEIS 221 // test
 
