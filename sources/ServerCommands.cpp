@@ -49,7 +49,7 @@ void Server::registerCommands() {
 
 std::vector<std::string> split(const std::string& input, const char delmiter) {
 
-    std::vector<std::string> tokens; 
+    std::vector<std::string> tokens;
     std::stringstream ss(input);
 
     std::string token;
@@ -74,28 +74,29 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 
     std::vector<std::string>  requestedChannels = split(params[0], ',');
     std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
-    
-	//for debugging
-	std::cout << "=== DEBUG ===\n";
-	for (size_t i = 0; i < keys.size(); i++) {
-		std::cout << RED << "KEYS[" << i << "] -> " << keys[i] << END_COLOR << "\n"; 
-	}
-	for (size_t i = 0; i < requestedChannels.size(); i++) {
-		std::cout << RED << "CHANNELS[" << i << "] -> " << requestedChannels[i] << END_COLOR << "\n"; 
-	}
-	
-		
+
+	// //for debugging
+	// std::cout << "=== DEBUG ===\n";
+	// for (size_t i = 0; i < keys.size(); i++) {
+	// 	std::cout << RED << "KEYS[" << i << "] -> " << keys[i] << END_COLOR << "\n";
+	// }
+	// for (size_t i = 0; i < requestedChannels.size(); i++) {
+	// 	std::cout << RED << "CHANNELS[" << i << "] -> " << requestedChannels[i] << END_COLOR << "\n";
+	// }
+
+
     for (size_t i = 0; i < requestedChannels.size(); i++) {
         const std::string& channelName = requestedChannels[i];
         const std::string& channelKey = (i < keys.size()) ? keys[i] : "";
-	
-	
+
+
 		if (Channel::isValidChannelName(channelName) == false) {
 			std::cout << "Error: Invalid channel name: " << channelName << ">\n";
+			logMessage(ERRORR, "CHANNEL", "Invalid name. Given Name[" + channelName + "]");
 			continue; // return;
 		}
-			 
-		
+
+
 		// -> How should we validate channel key..?
 
         if (client.hasJoinedChannel(channelName)) {
@@ -114,7 +115,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		} else {
 			channel = createChannel(channelName, channelKey);
 		}
-		
+
         channel->addMember(&client);      // server-side  -> add client to channel
         client.activeChannels(channelName);  // client side  -> track joined channels
         //channel->broadcast(client.getNickname() + " has joined " + channelName);
@@ -248,8 +249,8 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 	std::string quitMessage = "Client quit";
 	if (!params.empty())
 		quitMessage = " QUIT :" + params[0];
-	quitMessage = ":" + client.getNickname() + "!" + 
-						client.getUsername() + "@" + 
+	quitMessage = ":" + client.getNickname() + "!" +
+						client.getUsername() + "@" +
 						client.getHostname() + quitMessage + "\r\n";
 	client.appendSendBuffer(quitMessage);
 	client.sendData();
