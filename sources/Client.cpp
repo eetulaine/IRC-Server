@@ -11,7 +11,7 @@ Client::Client(int clientFD, std::string clientIP, int epollFd)
 
 Client::~Client() {
 	close(clientFD_);
-	std::cout << RED "CLIENT DESTROYED\n" END_COLOR;
+	logMessage(INFO, "CLIENT", "Client destroyed. ClientFD[" + std::to_string(clientFD_) + "]");
 }
 
 // PUBLIC MEMBER FUNCTIONS

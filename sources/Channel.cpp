@@ -1,27 +1,24 @@
 #include "Channel.hpp"
+#include "../includes/macros.hpp"
+#include "../includes/Server.hpp"
+
+
 
 Channel::Channel(const std::string &name, const std::string& key)
 	: name_(name), key_(""), keyProtected_(false) {
-	
-	std::cout << GREEN "=== CHANNEL CREATED ===\n" END_COLOR;
 
-	std::cout << "Name: " << name_ << "\n";
 	if(!key.empty()) {
 		setChannelKey(key);
-		std::cout << "Password: " << key_ << "\n";
 	}
 	else {
 		std::cout << "Password: Not provided\n";
 		// keyProtected_ == false;
 	}
-	std::cout << "Key length [" << key_.size() << "]\n";
-		
-		
+	logMessage(INFO, "CHANNEL", "New channel created. NAME[" + this->getChannelName() + "] Key[" + this->getChannelKey() + "]");
 }
 
 Channel::~Channel() {
-
-	std::cout << RED "=== CHANNEL DESTROYED\n" END_COLOR;
+	logMessage(WARNING, "CHANNEL", "Cheannel destroyed. NAME[" + this->getChannelName() + "] Key[" + this->getChannelKey() + "]");
 }
 
 
@@ -54,7 +51,7 @@ Channel* Server::createChannel(const std::string& channelName, const std::string
 
     Channel* newChannel = new Channel(channelName, channelKey);
 
-	// check for memory allocation! 
+	// check for memory allocation!
 
     channelMap_[channelName] = newChannel; // server stores and keeps track of created channels
     return newChannel;
