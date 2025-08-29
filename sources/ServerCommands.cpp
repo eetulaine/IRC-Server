@@ -70,7 +70,11 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
     	//sendReply(client, "461 " + client.getNickname() + " JOIN :Not enough parameters\r\n");
     	return;
 	}
-
+	else if (!client.isAuthenticated())
+	{
+		messageHandle(ERR_NOTREGISTERED, client, "JOIN", params);
+		return;
+	}
 
     std::vector<std::string>  requestedChannels = split(params[0], ',');
     std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
@@ -163,16 +167,16 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 	if (client.isAuthenticated())
 	{
 		std::string oldNick = client.getNickname();
+		std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
 		client.setNickname(params[0]);
 		logMessage(INFO, "NICK", "Nickname changed to " + client.getNickname() + ". Old Nickname: " + oldNick);
-		std::string replyMsg = std::to_string(client.getClientFD()) + ":" + oldNick + "!user@host NICK :" + client.getNickname();
 		client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
 	}
 	else {
 		client.setNickname(params[0]);
 		logMessage(INFO, "NICK", "Nickname set to " + client.getNickname());
 		if (client.isAuthenticated()) {
-			messageHandle(client, "USER", params);
+			messageHandle(client, "NICK", params);
 			logMessage(INFO, "REGISTRATION", "Client registration is successful. Username: " + client.getUsername());
 		}
 	}
@@ -255,11 +259,14 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 	client.appendSendBuffer(quitMessage);
 	client.sendData();
 	closeClient(client);
-};
+}
 
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
-	messageHandle(ERR_UMODEUNKNOWNFLAG, client, "PASS", params);
+	(void)params;
+	(void)this;
+	std::string msg = ":" + serverName_ + " 221 " + client.getNickname() + " +i" + "\r\n";
+	client.appendSendBuffer(msg);
 	logMessage(WARNING, "MODE", "Testing mode command. ClientFD: " + std::to_string(client.getClientFD()));
 }
 
