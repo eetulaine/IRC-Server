@@ -4,7 +4,7 @@
 
 
 
-Channel::Channel(const std::string &name, const std::string& key)
+Channel::Channel(Client* client, const std::string &name, const std::string& key)
 	: name_(name), key_(""), keyProtected_(false) {
 
 	if(!key.empty())
@@ -12,7 +12,9 @@ Channel::Channel(const std::string &name, const std::string& key)
 
 	logMessage(INFO, "CHANNEL " + this->getChannelName(),": New channel created, Name: [" 
         + this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
-
+	setOperator(client, true); // set the client creating the channel as operator by default
+	if (isOperator(client))
+		std::cout << GREEN "Client " << client->getNickname() << " is operator" END_COLOR << std::endl;
 }
 
 Channel::~Channel() {
@@ -49,12 +51,9 @@ void Channel::removeMember(Client *client) {
 		std::cout << "Menber <" << client->getNickname() << "> was not found in channel\n";
 }
 
+Channel* Server::createChannel(Client* client, const std::string& channelName, const std::string& channelKey) {
 
-
-Channel* Server::createChannel(const std::string& channelName, const std::string& channelKey) {
-
-
-    Channel* newChannel = new Channel(channelName, channelKey);
+    Channel* newChannel = new Channel(client, channelName, channelKey);
 
 	// check for memory allocation!
     channelMap_[channelName] = newChannel; // server stores and keeps track of created channels
@@ -126,6 +125,27 @@ Channel* Server::getChannel(Client* client, const std::string& channelName) {
     return nullptr;
 
 }
+
+const std::set<Client*>& Channel::getMembers() const {
+	return members_;
+}
+
+const std::set<Client*>& Channel::getOperators() const {
+	return operators_;
+}
+
+bool Channel::isOperator(Client* client) const {
+	return operators_.find(client) != operators_.end();
+}
+
+void Channel::setOperator(Client* client, bool isOperator) {
+	if (isOperator)
+		operators_.insert(client);
+	else
+		operators_.erase(client);
+
+}
+
 // std::string Channel::getTopic() {
 // 	return this->topic_;
 // }

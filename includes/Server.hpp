@@ -93,13 +93,15 @@ class Server {
 		void handleJoin(Client& client, const std::vector<std::string>& params);
 		bool channeClientlExist(Client* client, const std::string& channelName);
 		Channel* getChannel(Client* client, const std::string& channelName);
-		Channel* createChannel(const std::string& channelName, const std::string& channelKey);
+		Channel* createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
 
 		void handleUser(Client& client, const std::vector<std::string>& params);
 		void handlePass(Client& client, const std::vector<std::string>& params);
 		void handlePing(Client& client, const std::vector<std::string>& params);
-	  void handleQuit(Client& client, const std::vector<std::string>& params);
+		void handleQuit(Client& client, const std::vector<std::string>& params);
 		void handleMode(Client& client, const std::vector<std::string>& params);
+		void handleKick(Client& client, const std::vector<std::string>& params);
+		int handleKickParams(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
 		// Message

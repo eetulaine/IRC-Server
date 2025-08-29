@@ -37,7 +37,7 @@ void logMessage(logMsgType type, const std::string &action, const std::string &m
 			std::cout << YELLOW;
 			std::cout << "[WARNING] ";
 			break;
-		case ERRORR:
+		case ERROR:
 			std::cout << RED;
 			std::cout << "[ERROR]";
 			break;
