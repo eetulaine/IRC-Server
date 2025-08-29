@@ -4,33 +4,42 @@
 
 
 
-Channel::Channel(const std::string &name, const std::string& key)
+Channel::Channel(Client* client, const std::string &name, const std::string& key)
 	: name_(name), key_(""), keyProtected_(false) {
 
-	if(!key.empty()) {
+	if(!key.empty())
 		setChannelKey(key);
-	}
-	else {
-		std::cout << "Password: Not provided\n";
-		// keyProtected_ == false;
-	}
-	logMessage(INFO, "CHANNEL", "New channel created. NAME[" + this->getChannelName() + "] Key[" + this->getChannelKey() + "]");
+
+	logMessage(INFO, "CHANNEL " + this->getChannelName(),": New channel created, Name: [" 
+        + this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
+	setOperator(client, true); // set the client creating the channel as operator by default
+	if (isOperator(client))
+		std::cout << GREEN "Client " << client->getNickname() << " is operator" END_COLOR << std::endl;
 }
 
 Channel::~Channel() {
-	logMessage(WARNING, "CHANNEL", "Cheannel destroyed. NAME[" + this->getChannelName() + "] Key[" + this->getChannelKey() + "]");
+	logMessage(WARNING, "CHANNEL " + this->getChannelName(), ": Channel destroyed");
 }
 
 
 //PUBLIC METHODS
 void Channel::addMember(Client *client) {
+	
+	//   std::cout <<  "HEEEEEEEEEE\n";
+    // Check if client already exists using find()
+    // if (members_.find(client) != members_.end()) {
+    //     logMessage(WARNING, "CHANNEL " + this->getChannelName(), 
+    //               ": Client '" + client->getNickname() + "' is already a member.");
+    //     return;
+    // }
+    // std::cout <<  "HOOOOOOOOO\n";
+    // Client doesn't exist - add them
+    members_.insert(client);
 
-	auto status = members_.insert(client);
-	if (status.second)
-		std::cout << "Member <" << client->getNickname() << "> is successfully added to channel <" << name_ << ">\n";
-	else
-		std::cout << "Member <" << client->getNickname() << "> already exists in the channel\n";
+	client->activeChannels(this->getChannelName());
 
+    logMessage(INFO, "CHANNEL " + this->getChannelName(), 
+              ": New member joined: " + client->getNickname());
 }
 
 void Channel::removeMember(Client *client) {
@@ -42,18 +51,13 @@ void Channel::removeMember(Client *client) {
 		std::cout << "Menber <" << client->getNickname() << "> was not found in channel\n";
 }
 
-bool Server::channelExists(const std::string& channelName) {
-    return (channelMap_.find(channelName) != channelMap_.end());
-}
+Channel* Server::createChannel(Client* client, const std::string& channelName, const std::string& channelKey) {
 
-Channel* Server::createChannel(const std::string& channelName, const std::string& channelKey) {
-
-
-    Channel* newChannel = new Channel(channelName, channelKey);
+    Channel* newChannel = new Channel(client, channelName, channelKey);
 
 	// check for memory allocation!
-
     channelMap_[channelName] = newChannel; // server stores and keeps track of created channels
+	
     return newChannel;
 }
 
@@ -90,26 +94,58 @@ bool Channel::isValidChannelName(const std::string& name) {
 void Channel::setChannelKey(const std::string& key) {
 
 	key_ = key;
-	//keyProtected_ = true;
 	keyProtected_ = !key.empty();
 }
-
-std::string Channel::getChannelName() const {
-	return this->name_;
-}
-
-// std::string Channel::getTopic() {
-// 	return this->topic_;
-// }
 
 std::string Channel::getChannelKey() const {
 	return this->key_;
 }
 
-Channel* Server::getChannel(const std::string& channelName) {
+
+std::string Channel::getChannelName() const {
+	return this->name_;
+}
+
+bool Server::channeClientlExist(Client* client, const std::string& channelName) {
+	if (channelMap_.find(channelName) != channelMap_.end() && client->activeChannels(channelName) == true)
+		return true;
+    return (false);
+}
+
+
+Channel* Server::getChannel(Client* client, const std::string& channelName) {
+	(void)client;
     auto it = channelMap_.find(channelName);
-    if (it != channelMap_.end())
-        return it->second;
+    if (it != channelMap_.end()) {
+		// logMessage(WARNING, "CHANNEL " + channelName, 
+        //     ": Client '" + client->getNickname() + "' is already a member");
+		return it->second;
+	}
+        
     return nullptr;
 
 }
+
+const std::set<Client*>& Channel::getMembers() const {
+	return members_;
+}
+
+const std::set<Client*>& Channel::getOperators() const {
+	return operators_;
+}
+
+bool Channel::isOperator(Client* client) const {
+	return operators_.find(client) != operators_.end();
+}
+
+void Channel::setOperator(Client* client, bool isOperator) {
+	if (isOperator)
+		operators_.insert(client);
+	else
+		operators_.erase(client);
+
+}
+
+// std::string Channel::getTopic() {
+// 	return this->topic_;
+// }

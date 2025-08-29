@@ -43,7 +43,7 @@ int main(int argc, char **argv)
 	}
 	catch(const std::exception& e)
 	{
-		logMessage(ERRORR, "MAIN", e.what());
+		logMessage(ERROR, "MAIN", e.what());
 		return (1);
 	}
 	logMessage(INFO, "MAIN", "Server activity finished");
