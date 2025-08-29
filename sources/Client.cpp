@@ -80,13 +80,17 @@ void Client::epollEventChange(uint32_t eventType) {
 //------ CHANNEL --------
 
 // method to store joined channels
-void Client::activeChannels(const std::string &channelName) {
+bool Client::activeChannels(const std::string &channelName) {
 
 	auto status = joinedChannels_.insert(channelName);
-	if (status.second)
+	if (status.second) {
 		std::cout << "Channel <" << channelName << "> is added to client's active channels\n";
-	else
+		return true;
+	}
+		
+	else {
 		std::cout << "Client is already a member of channel: " << channelName << "\n";
+		return false;}
 }
 
 

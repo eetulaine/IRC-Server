@@ -58,3 +58,6 @@
 
 #define RPL_UMODEIS 221 // test
 
+#define ERR_BADCHANMASK 479 // channel name does not match the proper syntax
+
+#define ERR_BADCHANNELKEY 475

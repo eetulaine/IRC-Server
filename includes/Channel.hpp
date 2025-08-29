@@ -24,6 +24,7 @@ class Channel {
 
 		
 		//METHODS
+		bool isMember(Client* client);
 		void addMember(Client *client);
 		void removeMember(Client *client);
 		// bool hasKey(Client *client) const; 		// check for protected channel

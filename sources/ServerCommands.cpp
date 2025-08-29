@@ -27,7 +27,7 @@ void Server::registerCommands() {
 
     commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
 	    handleJoin(client, params);
-
+		// printChannelMap();
     };
 	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleQuit(client, params);
@@ -41,10 +41,25 @@ void Server::registerCommands() {
 		handlePass(client, params);
 	};
 
-	commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleMode(client, params);
-	};
+	// commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
+	// 	handleMode(client, params);
+	// };
 
+}
+
+void Server::printChannelMap() {
+    // Iterate through the map and print each channel's name and details
+    for (const auto& entry : channelMap_) {
+        const std::string& channelName = entry.first;  // Channel name
+        Channel* channel = entry.second;               // Channel object (pointer)
+
+        // Print the channel name
+        std::cout << "Channel Name: " << channelName << std::endl;
+
+        // Access specific properties of the channel
+        std::cout << "  Channel Key: " << channel->getChannelKey() << std::endl;
+        std::cout << "  Requires Password: " << (channel->requiresPassword() ? "Yes" : "No") << std::endl;
+    }
 }
 
 std::vector<std::string> split(const std::string& input, const char delmiter) {
@@ -60,67 +75,86 @@ std::vector<std::string> split(const std::string& input, const char delmiter) {
     return tokens;
 }
 
-// CHANNEL ----- handle join command
 /**
  * @breif Handles each requested channel from JOIN command.
  */
 void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
 
 	if (params.empty()) {
-    	//sendReply(client, "461 " + client.getNickname() + " JOIN :Not enough parameters\r\n");
-    	return;
+		messageHandle(ERR_NEEDMOREPARAMS, client, "JOIN", params);
+		logMessage(ERRORR, "CHANNEL", "Not enough parameters");
+		return ;
 	}
-
-
+	
     std::vector<std::string>  requestedChannels = split(params[0], ',');
     std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
 
-	// //for debugging
-	// std::cout << "=== DEBUG ===\n";
-	// for (size_t i = 0; i < keys.size(); i++) {
-	// 	std::cout << RED << "KEYS[" << i << "] -> " << keys[i] << END_COLOR << "\n";
-	// }
-	// for (size_t i = 0; i < requestedChannels.size(); i++) {
-	// 	std::cout << RED << "CHANNELS[" << i << "] -> " << requestedChannels[i] << END_COLOR << "\n";
-	// }
-
-
     for (size_t i = 0; i < requestedChannels.size(); i++) {
         const std::string& channelName = requestedChannels[i];
-        const std::string& channelKey = (i < keys.size()) ? keys[i] : "";
-
+        const std::string& channelKey = (i < keys.size()) ? keys[i] : ""; 	// -> How should we validate channel key..?
 
 		if (Channel::isValidChannelName(channelName) == false) {
-			std::cout << "Error: Invalid channel name: " << channelName << ">\n";
-			logMessage(ERRORR, "CHANNEL", "Invalid name. Given Name[" + channelName + "]");
-			continue; // return;
-		}
-
-
-		// -> How should we validate channel key..?
-
-        if (client.hasJoinedChannel(channelName)) {
-			std::cout << "Clinet <" << client.getNickname() << "> is already a member at channel <" << channelName << "\n";
+			messageHandle(ERR_BADCHANMASK, client, "JOIN", params);
+			logMessage(ERRORR, "CHANNEL " + channelName, "Invalid channel name");
 			continue;
 		}
 
-		Channel* channel = getChannel(channelName);
-		if (channel) {
-			if (!channel->checkChannelKey(channelKey)) {
-				std::cout << "Error: Keys do not match.\n";
-				continue; //return;
+		if (channeClientlExist(&client, channelName)) {
+			Channel* channel = getChannel(&client, channelName);
+			if (channel->requiresPassword()) {
+				if (channelKey.empty()) {  // check with multiple keys, not always empty
+	                messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
+	                logMessage(ERRORR, "CHANNEL " + channel->getChannelName(),
+	                    "Key required to join the channel: Client " + client.getNickname() + " failed to join");
+            		continue;;
+				}
+				else {
+					if (channel->getChannelKey() != channelKey) {
+						messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
+                		logMessage(ERRORR, "CHANNEL " + channel->getChannelName(),
+                           "Keys do not match: " + client.getNickname() + " failed to join");
+                		continue;
+					}
+					else
+						logMessage(ERRORR, "CHANNEL", ": joined key protected channel!: " + channelName);
+
+				}
 			}
-			std::cout << "Member " << client.getNickname() << " successfully entered key for <" << channelName << ">!\n";
-
-		} else {
-			channel = createChannel(channelName, channelKey);
+			logMessage(WARNING, "CHANNEL " + channelName, 
+            	": Client '" + client.getNickname() + "' is already a member");
+			continue;
 		}
+        Channel* channel = getChannel(&client, channelName);
+        if (!channel) {
+			channel = createChannel(channelName, channelKey);
+			channel->addMember(&client);    
+			if (!channel)
+				logMessage(ERRORR, "SERVER", ": Failed to create channel: " + channelName);
+		}
+        else {
+			if (channel->requiresPassword()) {
+				if (channelKey.empty()) {  // check with multiple keys, not always empty
+	                messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
+	                logMessage(ERRORR, "CHANNEL " + channel->getChannelName(),
+	                    "Key required to join the channel: Client " + client.getNickname() + " failed to join");
+            		continue;;
+				}
+				else {
+					if (channel->getChannelKey() != channelKey) {
+						messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
+                		logMessage(ERRORR, "CHANNEL " + channel->getChannelName(),
+                           "Keys do not match: " + client.getNickname() + " failed to join");
+                		continue;
+					}
+					else
+						logMessage(ERRORR, "CHANNEL", ": joined key protected channel!: " + channelName);
 
-        channel->addMember(&client);      // server-side  -> add client to channel
-        client.activeChannels(channelName);  // client side  -> track joined channels
-        //channel->broadcast(client.getNickname() + " has joined " + channelName);
+				}
+			}
+        }
     }
 }
+
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
 	// for (const std::string& param : params) {

@@ -15,3 +15,7 @@ JOIN messsage:
    ERR_NOSUCHCHANNEL               ERR_TOOMANYCHANNELS
    ERR_TOOMANYTARGETS              ERR_UNAVAILRESOURCE
    RPL_TOPIC
+
+
+connect:
+irssi -c localhost -p 6667 -w qwerty
