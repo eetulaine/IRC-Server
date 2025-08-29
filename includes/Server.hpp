@@ -37,6 +37,8 @@ class Server {
 		int serverSocket_;
 		struct addrinfo hints_, *res_;
 		const std::string	serverName_ = "IRCS_SERV";
+			// CHANNEL ----- Hager -----
+		std::map<std::string, Channel*>  channelMap_;     // keeps track of created channels
 
 		// private member functions used for the server setup within the Server constructor
 		void initAddrInfo(); 		//-> init addrinfo struct settings
@@ -59,8 +61,7 @@ class Server {
 		std::map<std::string, CommandHandler> commands;
 
 
-		// CHANNEL ----- Hager -----
-		std::map<std::string, Channel*>  channelMap_;     // keeps track of created channels
+	
 
 	public:
 		Server(int port, std::string password);
@@ -90,8 +91,8 @@ class Server {
   
 		// CHANNEL
 		void handleJoin(Client& client, const std::vector<std::string>& params);
-		bool channelExists(const std::string& channelName);
-		Channel* getChannel(const std::string& channelName);
+		bool channeClientlExist(Client* client, const std::string& channelName);
+		Channel* getChannel(Client* client, const std::string& channelName);
 		Channel* createChannel(const std::string& channelName, const std::string& channelKey);
 
 		void handleUser(Client& client, const std::vector<std::string>& params);
@@ -106,7 +107,7 @@ class Server {
 		void messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
   // CHANNEL
-		void handleJoinCommand(Client &client, const std::vector<std::string>& params);
+		void printChannelMap();
 
 };
 
