@@ -146,7 +146,7 @@ void Server::processBuffer(Client& client) {
 		std::string commandStr = parsed.first;
         std::vector<std::string> params = parsed.second;
 		std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
-
+		logMessage(WARNING, "COMMAND", "C[" + commandStr + "], P[" + params[0] + "]");
 		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
 			return handleQuit(client, params);
 		auto it = commands.find(commandStr);
