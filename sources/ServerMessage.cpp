@@ -9,8 +9,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		paramString += params[i];
 		if (i != params.size() - 1) {
 			paramString += " ";
+		}
 	}
-}
 
 	message = ":" + this->serverName_ + " ";
 	if (code < 10) {

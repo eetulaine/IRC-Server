@@ -130,7 +130,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 
 				}
 			}
-			logMessage(WARNING, "CHANNEL " + channelName, 
+			logMessage(WARNING, "CHANNEL " + channelName,
             	": Client '" + client.getNickname() + "' is already a member");
 			continue;
 		}
@@ -283,7 +283,6 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-
 	std::cout << "Handling QUIT command. Parameters: " << std::endl;
     if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
 		closeClient(client);
@@ -300,7 +299,6 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 	client.sendData();
 	closeClient(client);
 }
-
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
 	(void)params;
@@ -330,7 +328,7 @@ int Server::handleKickParams(Client& client, const std::vector<std::string>& par
 }
 
 void Server::handleKick(Client& client, const std::vector<std::string>& params) {
-	
+
 	if (handleKickParams(client, params) == ERR)
 		return;
 	std::string channel = params[0];
