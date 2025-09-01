@@ -91,9 +91,10 @@ class Server {
 
 		// CHANNEL
 		void		handleJoin(Client& client, const std::vector<std::string>& params);
-		bool		channeClientlExist(Client* client, const std::string& channelName);
-		Channel*	getChannel(Client* client, const std::string& channelName);
+		bool 		channelExists(const std::string& channelName);
+		Channel*	getChannel(const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
+		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
 
 		void		handleUser(Client& client, const std::vector<std::string>& params);
 		void		handlePass(Client& client, const std::vector<std::string>& params);
