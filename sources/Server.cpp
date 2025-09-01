@@ -282,10 +282,10 @@ bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &st
 
 	if (str1Lower == str2Lower)
 	{
-		return (SUCCESS);
+		return (true);
 	}
 	else
-		return (FAIL);
+		return (false);
 }
 
 // **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
@@ -294,10 +294,10 @@ bool Server::isUserDuplicate(std::string userName) {
 	for (auto& [fd, client] : this->clients_) {
 		if (client && stringCompCaseIgnore(client->getUsername(), userName))
 		{
-			return (SUCCESS); // Duplicate found
+			return (true); // Duplicate found
 		}
 	}
-	return (FAIL);   //  this exits after first client!
+	return (false);   //  this exits after first client!
 }
 
 bool	Server::isNickDuplicate(std::string  nickName) {
@@ -305,9 +305,16 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	for (auto& [fd, client] : this->clients_) {
 		if (client && stringCompCaseIgnore(client->getNickname(), nickName))
 		{
-			return (SUCCESS);// Duplicate found
+			return (true);// Duplicate found
 		}
 	}
-	return (FAIL);
+	return (false);
 }
 
+bool	Server::doesChannelExist(const std::string chnnelName) {
+	auto it = channelMap_.find(chnnelName);
+	if (it == channelMap_.end()) {
+		return false;
+	}
+	return true;
+}
