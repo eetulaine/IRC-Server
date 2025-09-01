@@ -9,8 +9,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		paramString += params[i];
 		if (i != params.size() - 1) {
 			paramString += " ";
+		}
 	}
-}
 
 	message = ":" + this->serverName_ + " ";
 	if (code < 10) {
@@ -53,7 +53,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
 		message += "Unknown MODE flag";
 	} else if (code == RPL_WHOISUSER) {
-		message += paramString;
+		message += "You are known as " + client.getNickname();
 	} else if (code == RPL_PONG) {
 		message = ":" + this->serverName_ + " PONG "+ this->serverName_;
 	} else if (code == ERR_ERRONEUSUSER) {

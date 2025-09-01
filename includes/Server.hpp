@@ -32,28 +32,28 @@ class Channel;
 class Server {
 
 	private:
-		int	port_;
-		std::string password_;
-		int serverSocket_;
-		struct addrinfo hints_, *res_;
+		int			port_;
+		std::string	password_;
+		int			serverSocket_;
+		struct addrinfo		hints_, *res_;
 		const std::string	serverName_ = "IRCS_SERV";
 			// CHANNEL ----- Hager -----
 		std::map<std::string, Channel*>  channelMap_;     // keeps track of created channels
 
 		// private member functions used for the server setup within the Server constructor
-		void initAddrInfo(); 		//-> init addrinfo struct settings
-		void createAddrInfo(); 		//-> call getaddrinfo
-		void createServSocket(); 	//-> create socket
-		void setNonBlocking(); 		//-> set socket status flags to non-blocking using fcntl
-		void setSocketOption();		//-> set socket option to reuse address to avoid "address already in use" error
-		void bindSocket();			//-> bind the socket to the address
-		void initListen();			//-> prepare to listen for incoming connections
+		void		initAddrInfo(); 		//-> init addrinfo struct settings
+		void		createAddrInfo(); 		//-> call getaddrinfo
+		void		createServSocket(); 	//-> create socket
+		void		setNonBlocking(); 		//-> set socket status flags to non-blocking using fcntl
+		void		setSocketOption();		//-> set socket option to reuse address to avoid "address already in use" error
+		void		bindSocket();			//-> bind the socket to the address
+		void		initListen();			//-> prepare to listen for incoming connections
 
 		// dependent methods for "ServerActivity"
-		void acceptNewClient(int epollFd); //-> accept new client request
+		void		acceptNewClient(int epollFd); //-> accept new client request
 		std::string getClientIP(struct sockaddr_in clientSocAddr);
-		void receiveData(int currentFD);
-		void sendData(int currentFD);
+		void		receiveData(int currentFD);
+		void		sendData(int currentFD);
 		std::map<int, std::unique_ptr<Client>> clients_;
 		std::pair<std::string, std::vector<std::string>> parseCommand(const std::string& line);
 
@@ -61,7 +61,7 @@ class Server {
 		std::map<std::string, CommandHandler> commands;
 
 
-	
+
 
 	public:
 		Server(int port, std::string password);
@@ -69,46 +69,49 @@ class Server {
 
 
 		// ServerActivity: activity response loop for running server
-		void startServer();			//-> The loop, that will keep the server running and do diff actions
-		void processBuffer(Client& client);
-		void registerCommands();
-		void closeServer();
-		void closeClient(Client& client);
+		void		startServer();			//-> The loop, that will keep the server running and do diff actions
+		void		processBuffer(Client& client);
+		void		registerCommands();
+		void		closeServer();
+		void		closeClient(Client& client);
 
-		int	getPort() const;
-		int getServerSocket() const;
-		std::string getPassword() const;
-		std::string getServerName() const;
+		int			getPort() const;
+		int			getServerSocket() const;
+		std::string	getPassword() const;
+		std::string	getServerName() const;
 
 		/// dependent Methods for commands
-		bool	stringCompCaseIgnore(const std::string &str1, const std::string &str2);
-		bool	isUserDuplicate(std::string  userName);
-		bool	isNickDuplicate(std::string  userName);
-		bool	isNickUserValid(std::string cmd, std::string name);
+		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
+		bool		isUserDuplicate(std::string  userName);
+		bool		isNickDuplicate(std::string  userName);
+		bool		isNickUserValid(std::string cmd, std::string name);
 
 		// commands
-		void handleNick(Client& client, const std::vector<std::string>& params);
-  
-		// CHANNEL
-		void handleJoin(Client& client, const std::vector<std::string>& params);
-		bool channeClientlExist(Client* client, const std::string& channelName);
-		Channel* getChannel(Client* client, const std::string& channelName);
-		Channel* createChannel(const std::string& channelName, const std::string& channelKey);
+		void		handleNick(Client& client, const std::vector<std::string>& params);
 
-		void handleUser(Client& client, const std::vector<std::string>& params);
-		void handlePass(Client& client, const std::vector<std::string>& params);
-		void handlePing(Client& client, const std::vector<std::string>& params);
-	  void handleQuit(Client& client, const std::vector<std::string>& params);
-		void handleMode(Client& client, const std::vector<std::string>& params);
+		// CHANNEL
+		void		handleJoin(Client& client, const std::vector<std::string>& params);
+		bool		channeClientlExist(Client* client, const std::string& channelName);
+		Channel*	getChannel(Client* client, const std::string& channelName);
+		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
+
+		void		handleUser(Client& client, const std::vector<std::string>& params);
+		void		handlePass(Client& client, const std::vector<std::string>& params);
+		void		handlePing(Client& client, const std::vector<std::string>& params);
+		void		handleQuit(Client& client, const std::vector<std::string>& params);
+		void		handleMode(Client& client, const std::vector<std::string>& params);
+		void		handleKick(Client& client, const std::vector<std::string>& params);
+		int			handleKickParams(Client& client, const std::vector<std::string>& params);
+		void		handlePrivMsg(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
 		// Message
-		void messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
-		void messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
+		void		messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+		void		messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
   // CHANNEL
-		void printChannelMap();
+		void		printChannelMap();
 
 };
 
-void logMessage(logMsgType type, const std::string &action, const std::string &msg);
+void	logMessage(logMsgType type, const std::string &action, const std::string &msg);
