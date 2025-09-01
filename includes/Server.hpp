@@ -86,15 +86,17 @@ class Server {
 		bool		isNickDuplicate(std::string  userName);
 		bool		isNickUserValid(std::string cmd, std::string name);
 
-		// commands
-		void		handleNick(Client& client, const std::vector<std::string>& params);
+
 
 		// CHANNEL
 		void		handleJoin(Client& client, const std::vector<std::string>& params);
 		bool		channeClientlExist(Client* client, const std::string& channelName);
 		Channel*	getChannel(Client* client, const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
+		bool		doesChannelExist(const std::string chnnelName);
 
+		// COMMAND
+		void		handleNick(Client& client, const std::vector<std::string>& params);
 		void		handleUser(Client& client, const std::vector<std::string>& params);
 		void		handlePass(Client& client, const std::vector<std::string>& params);
 		void		handlePing(Client& client, const std::vector<std::string>& params);
@@ -109,7 +111,8 @@ class Server {
 		void		messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
 		void		messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
-  // CHANNEL
+
+		// CHANNEL
 		void		printChannelMap();
 
 };
