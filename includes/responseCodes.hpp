@@ -34,4 +34,5 @@
 #define ERR_PASSWDMISMATCH		464 // incorrect password
 #define ERR_BADCHANNELKEY		475
 #define ERR_BADCHANMASK			479 // channel name does not match the proper syntax
+#define	ERR_CHANOPRIVSNEEDED	482 // user doesn't have the required channel operator rights
 #define ERR_UMODEUNKNOWNFLAG	501
