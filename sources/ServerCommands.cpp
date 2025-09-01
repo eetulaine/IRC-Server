@@ -85,10 +85,17 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		logMessage(ERRORR, "CHANNEL", "Not enough parameters");
 		return ;
 	}
-	
+
+	/* else if (!client.isAuthenticated())
+	{
+		messageHandle(ERR_NOTREGISTERED, client, "JOIN", params);
+		return;
+	}
+ */
     std::vector<std::string>  requestedChannels = split(params[0], ',');
     std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
-
+	
+	
     for (size_t i = 0; i < requestedChannels.size(); i++) {
         const std::string& channelName = requestedChannels[i];
         const std::string& channelKey = (i < keys.size()) ? keys[i] : ""; 	// -> How should we validate channel key..?
@@ -99,39 +106,14 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 			continue;
 		}
 
+		Channel* channel = nullptr;
 		if (channeClientlExist(&client, channelName)) {
-			Channel* channel = getChannel(&client, channelName);
-			if (channel->requiresPassword()) {
-				if (channelKey.empty()) {  // check with multiple keys, not always empty
-	                messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
-	                logMessage(ERRORR, "CHANNEL " + channel->getChannelName(),
-	                    "Key required to join the channel: Client " + client.getNickname() + " failed to join");
-            		continue;;
-				}
-				else {
-					if (channel->getChannelKey() != channelKey) {
-						messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
-                		logMessage(ERRORR, "CHANNEL " + channel->getChannelName(),
-                           "Keys do not match: " + client.getNickname() + " failed to join");
-                		continue;
-					}
-					else
-						logMessage(ERRORR, "CHANNEL", ": joined key protected channel!: " + channelName);
-
-				}
-			}
-			logMessage(WARNING, "CHANNEL " + channelName, 
+			logMessage(WARNING, "CHANNEL " + channelName,
             	": Client '" + client.getNickname() + "' is already a member");
 			continue;
 		}
-        Channel* channel = getChannel(&client, channelName);
-        if (!channel) {
-			channel = createChannel(channelName, channelKey);
-			channel->addMember(&client);    
-			if (!channel)
-				logMessage(ERRORR, "SERVER", ": Failed to create channel: " + channelName);
-		}
-        else {
+		else if (channelMap_.find(channelName) != channelMap_.end() && client.activeChannels(channelName) == false) {
+			channel = getChannel(&client, channelName);
 			if (channel->requiresPassword()) {
 				if (channelKey.empty()) {  // check with multiple keys, not always empty
 	                messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
@@ -151,10 +133,14 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 
 				}
 			}
-        }
-    }
+			channel->addMember(&client);
+		}
+		else if (channelMap_.find(channelName) == channelMap_.end()){
+			channel = createChannel(channelName, channelKey);
+			channel->addMember(&client);
+		}
+	}
 }
-
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
 	// for (const std::string& param : params) {
