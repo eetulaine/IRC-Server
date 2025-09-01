@@ -391,9 +391,34 @@ void Server::closeClient(Client& client) {
 }
 
 void Server::handlePrivMsg(Client& client, const std::vector<std::string>& params) {
-	(void)client;
-	(void)this;
 	for (const std::string& param : params) {
 		std::cout << "- " << param << std::endl;
 	}
+
+	// ERR_NOSUCHNICK  ERR_TOOMANYTARGETS ERR_CANNOTSENDTOCHAN
+	if (params.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "PRIVMSG", params);
+		logMessage(ERROR, "PRIVMSG", "No parameter provided");
+	}
+	else if (params[0].empty()) {
+		messageHandle(ERR_NORECIPIENT, client, "PRIVMSG", params);
+		logMessage(ERROR, "PRIVMSG", "No recipient to send msg");
+	}
+	else if (params[1].empty()) {
+		messageHandle(ERR_NOTEXTTOSEND, client, "PRIVMSG", params);
+		logMessage(ERROR, "PRIVMSG", "No text to send");
+	}
+
+	bool isChannel = false;
+	std::string sendTo = params[0];
+	if (sendTo[0] == '#') {
+		isChannel = true;
+		sendTo.erase(0,1);
+		if (!doesChannelExist(sendTo)) {
+			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
+			logMessage(ERROR, "PRIVMSG", "Channel: " + sendTo + " does not exist");
+		}
+
+	}
+	//std::string msgToSend;
 }
