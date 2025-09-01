@@ -48,7 +48,9 @@ void Server::registerCommands() {
 	commands["KICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleKick(client, params);
 	};
-
+	/* commands["INVITE"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleKick(client, params);
+	}; */
 }
 
 void Server::printChannelMap() {
@@ -90,12 +92,12 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		return ;
 	}
 
-	else if (!client.isAuthenticated())
+	/* else if (!client.isAuthenticated())
 	{
 		messageHandle(ERR_NOTREGISTERED, client, "JOIN", params);
 		return;
 	}
-
+ */
     std::vector<std::string>  requestedChannels = split(params[0], ',');
     std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
 
@@ -277,9 +279,9 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 	else {
 		client.setPassword(params[0]);
 		client.setIsPassValid(true);
-		client.setAuthenticated(true); // check logic
+		//client.setAuthenticated(true); // check logic
 	}
-	logMessage(INFO, "PASS", "Client authentication completed. ClientFD: " + std::to_string(client.getClientFD()));
+	// logMessage(INFO, "PASS", "Client authentication completed. ClientFD: " + std::to_string(client.getClientFD()));
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
@@ -349,10 +351,10 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 		logMessage(ERROR, "KICK", "User " + client.getNickname() + " not on channel " + channel);
 		return;
 	}
-
-	// ADD A CHECK WHETHER USER HAS OPERATOR RIGHTS!!
-	// if (!targetChannel->isOperator(&client)) {}
-
+	if (!targetChannel->isOperator(&client)) { // check whether the user has operator rights on the channel
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, params);
+		logMessage(ERROR, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
+	}
 	Client* clientToKick = nullptr;
 	for (Client* member : members) {
 		if (member->getNickname() == userToKick) {
@@ -365,7 +367,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 		return; //comment this out if user can self-kick
 	}
 	if (clientToKick == nullptr) {
-		messageHandle(ERR_USERNOTINCHANNEL, client, userToKick + " " + channel, params);
+		messageHandle(ERR_USERNOTINCHANNEL, client, "KICK", params);
 		logMessage(ERROR, "KICK", "User " + userToKick + " not found on channel " + channel);
 		return;
 	}
