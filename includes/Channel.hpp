@@ -26,9 +26,8 @@ class Channel {
 		
 		//METHODS
 		bool isMember(Client* client);
-		void addMember(Client *client);
+		void addChannelMember(Client *client);
 		void removeMember(Client *client);
-		// bool hasKey(Client *client) const; 		// check for protected channel
 		static bool isValidChannelName(const std::string& name);
 		bool isOperator(Client* client) const;
 		//void removeOperator(Client* client);
@@ -36,11 +35,11 @@ class Channel {
 		// ACCESSORS
 		void setChannelKey(const std::string& key);
 		void setOperator(Client* client, bool isOperator);
-		bool requiresPassword();
+		bool isKeyProtected();
 		std::string getChannelName() const;
-		std::string getTopic(); // make it const?
+		// std::string getTopic(); // make it const?
 		std::string getChannelKey() const;
-		bool checkChannelKey(const std::string& providedKey);
+		bool checkForChannelKey(Channel* channel, Client* client, const std::string& providedKey);
 		const std::set<Client *> &getMembers() const; 			// list all clients in the channel
 		const std::set<Client*> &getOperators() const;			// list all operators
 		//size_t getOperatorCount() const;

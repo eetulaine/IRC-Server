@@ -16,6 +16,17 @@ bool Server::isNickUserValid(std::string cmd, std::string name) {
 	return (SUCCESS);
 }
 
+Channel* Server::createChannel(Client* client, const std::string& channelName, const std::string& channelKey) {
+
+    Channel* newChannel = new Channel(client, channelName, channelKey);
+    channelMap_[channelName] = newChannel;
+    return newChannel;
+}
+
+bool Server::channelExists(const std::string& channelName) {
+
+	return (channelMap_.find(channelName) != channelMap_.end());
+}
 
 void logMessage(logMsgType type, const std::string &action, const std::string &msg)
 {

@@ -70,7 +70,7 @@ class Client {
 		void appendSendBuffer(std::string sendMsg);
 		void epollEventChange(uint32_t eventType); // any better name??
 		//------ CHANNEL -------
-		bool activeChannels(const std::string &channelName);
-		bool hasJoinedChannel(const std::string& channelName);
+		void addToJoinedChannelList(const std::string &channelName);
+		bool isInChannel(const std::string& channelName);
 		//void leaveChannel(const std::string &channelName);
 };
