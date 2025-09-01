@@ -41,6 +41,10 @@ void logMessage(logMsgType type, const std::string &action, const std::string &m
 			std::cout << RED;
 			std::cout << "[ERROR]";
 			break;
+		case DEBUG:
+			std::cout << BLUE;
+			std::cout << "[DEBUG]";
+			break;
 	}
 	std::cout << END_COLOR;
 	std::cout << "[" << action << "] " << msg << std::endl;
