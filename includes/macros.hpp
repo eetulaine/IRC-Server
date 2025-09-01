@@ -16,4 +16,4 @@
 #define MAX_MSG_LEN 512
 #define BUF_SIZE 1024
 
-enum logMsgType { INFO, WARNING, ERROR };
+enum logMsgType { INFO, WARNING, ERROR, DEBUG };

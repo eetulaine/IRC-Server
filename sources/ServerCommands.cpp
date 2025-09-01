@@ -11,12 +11,6 @@ void Server::registerCommands() {
 		logMessage(WARNING, "CAP", "CAP command ignored. ClientFD: " + std::to_string(client.getClientFD()));
 	};
 
-// 	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
-// 		(void)params;
-// 		(void)this;
-// 		logMessage(WARNING, "JOIN", "JOIN command ignored. ClientFD: " + std::to_string(client.getClientFD()));
-// 	};
-
 	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePing(client, params);
 	};
@@ -41,9 +35,13 @@ void Server::registerCommands() {
 		handlePass(client, params);
 	};
 
-	// commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
-	// 	handleMode(client, params);
-	// };
+	commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleMode(client, params);
+	};
+
+	commands["PRIVMSG"] = [this](Client& client, const std::vector<std::string>& params) {
+		handlePrivMsg(client, params);
+	};
 
 	commands["KICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleKick(client, params);
@@ -130,7 +128,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 
 				}
 			}
-			logMessage(WARNING, "CHANNEL " + channelName, 
+			logMessage(WARNING, "CHANNEL " + channelName,
             	": Client '" + client.getNickname() + "' is already a member");
 			continue;
 		}
@@ -277,13 +275,12 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 	else {
 		client.setPassword(params[0]);
 		client.setIsPassValid(true);
-		client.setAuthenticated(true); // check logic
+		logMessage(INFO, "PASS", "Password validated for ClientFD: " + std::to_string(client.getClientFD()));
+		//client.setAuthenticated(true); // check logic, usually pass always come first
 	}
-	logMessage(INFO, "PASS", "Client authentication completed. ClientFD: " + std::to_string(client.getClientFD()));
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-
 	std::cout << "Handling QUIT command. Parameters: " << std::endl;
     if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
 		closeClient(client);
@@ -300,7 +297,6 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 	client.sendData();
 	closeClient(client);
 }
-
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
 	(void)params;
@@ -330,7 +326,7 @@ int Server::handleKickParams(Client& client, const std::vector<std::string>& par
 }
 
 void Server::handleKick(Client& client, const std::vector<std::string>& params) {
-	
+
 	if (handleKickParams(client, params) == ERR)
 		return;
 	std::string channel = params[0];
@@ -394,3 +390,10 @@ void Server::closeClient(Client& client) {
 		clients_.erase(clientfd);
 }
 
+void Server::handlePrivMsg(Client& client, const std::vector<std::string>& params) {
+	(void)client;
+	(void)this;
+	for (const std::string& param : params) {
+		std::cout << "- " << param << std::endl;
+	}
+}
