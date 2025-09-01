@@ -16,8 +16,11 @@
 #define ERR_NOSUCHNICK 			401
 #define ERR_NOSUCHSERVER 		402
 #define ERR_NOSUCHCHANNEL 		403
+#define ERR_CANNOTSENDTOCHAN	404 // When client cannot send msg (mode +m, +b, etc..)
+#define ERR_TOOMANYTARGETS		407 // When to many target client(user) or channel
 #define ERR_NOORIGIN 			409
 #define ERR_NORECIPIENT 		411
+#define ERR_NOTEXTTOSEND		412 // when PRIVMSG has no text to send
 #define ERR_UNKNOWNCOMMAND 		421
 #define ERR_NONICKNAMEGIVEN 	431 // No nickname given
 #define ERR_ERRONEUSNICKNAME	432 // Erroneous nickname (e.g., contains forbidden characters)
