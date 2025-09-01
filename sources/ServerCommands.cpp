@@ -11,12 +11,6 @@ void Server::registerCommands() {
 		logMessage(WARNING, "CAP", "CAP command ignored. ClientFD: " + std::to_string(client.getClientFD()));
 	};
 
-// 	commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
-// 		(void)params;
-// 		(void)this;
-// 		logMessage(WARNING, "JOIN", "JOIN command ignored. ClientFD: " + std::to_string(client.getClientFD()));
-// 	};
-
 	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePing(client, params);
 	};
@@ -41,9 +35,13 @@ void Server::registerCommands() {
 		handlePass(client, params);
 	};
 
-	// commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
-	// 	handleMode(client, params);
-	// };
+	commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleMode(client, params);
+	};
+
+	commands["PRIVMSG"] = [this](Client& client, const std::vector<std::string>& params) {
+		handlePrivMsg(client, params);
+	};
 
 	commands["KICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleKick(client, params);
@@ -277,9 +275,9 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 	else {
 		client.setPassword(params[0]);
 		client.setIsPassValid(true);
-		client.setAuthenticated(true); // check logic
+		logMessage(INFO, "PASS", "Password validated for ClientFD: " + std::to_string(client.getClientFD()));
+		//client.setAuthenticated(true); // check logic, usually pass always come first
 	}
-	logMessage(INFO, "PASS", "Client authentication completed. ClientFD: " + std::to_string(client.getClientFD()));
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
@@ -392,3 +390,10 @@ void Server::closeClient(Client& client) {
 		clients_.erase(clientfd);
 }
 
+void Server::handlePrivMsg(Client& client, const std::vector<std::string>& params) {
+	(void)client;
+	(void)this;
+	for (const std::string& param : params) {
+		std::cout << "- " << param << std::endl;
+	}
+}
