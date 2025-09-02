@@ -82,7 +82,7 @@ void Client::addToJoinedChannelList(const std::string &channelName) {
 
 	joinedChannels_.insert(channelName);
 	logMessage(INFO, "CLIENT", 
-		getNickname() + " joined channel: " + "#" + channelName); 
+		getNickname() + " joined channel: " + channelName);
 }
 
 bool Client::isInChannel(const std::string& channelName) {
