@@ -10,7 +10,7 @@ Channel::Channel(Client* client, const std::string &name, const std::string& key
 	if(!key.empty())
 		setChannelKey(key);
 
-	logMessage(INFO, "CHANNEL " + this->getChannelName(),": New channel created, Name: [" 
+	logMessage(INFO, "CHANNEL " + this->getChannelName(),": New channel created, Name: ["
         + this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
@@ -24,11 +24,11 @@ Channel::~Channel() {
 
 //PUBLIC METHODS
 void Channel::addMember(Client *client) {
-	
+
 	//   std::cout <<  "HEEEEEEEEEE\n";
     // Check if client already exists using find()
     // if (members_.find(client) != members_.end()) {
-    //     logMessage(WARNING, "CHANNEL " + this->getChannelName(), 
+    //     logMessage(WARNING, "CHANNEL " + this->getChannelName(),
     //               ": Client '" + client->getNickname() + "' is already a member.");
     //     return;
     // }
@@ -38,7 +38,7 @@ void Channel::addMember(Client *client) {
 
 	client->activeChannels(this->getChannelName());
 
-    logMessage(INFO, "CHANNEL " + this->getChannelName(), 
+    logMessage(INFO, "CHANNEL " + this->getChannelName(),
               ": New member joined: " + client->getNickname());
 }
 
@@ -57,7 +57,7 @@ Channel* Server::createChannel(Client* client, const std::string& channelName, c
 
 	// check for memory allocation!
     channelMap_[channelName] = newChannel; // server stores and keeps track of created channels
-	
+
     return newChannel;
 }
 
@@ -115,15 +115,13 @@ bool Server::channeClientlExist(Client* client, const std::string& channelName) 
 
 Channel* Server::getChannel(Client* client, const std::string& channelName) {
 	(void)client;
-    auto it = channelMap_.find(channelName);
-    if (it != channelMap_.end()) {
-		// logMessage(WARNING, "CHANNEL " + channelName, 
-        //     ": Client '" + client->getNickname() + "' is already a member");
+	auto it = channelMap_.find(channelName);
+	if (it != channelMap_.end()) {
+		// logMessage(WARNING, "CHANNEL " + channelName,
+		//     ": Client '" + client->getNickname() + "' is already a member");
 		return it->second;
 	}
-        
-    return nullptr;
-
+	return nullptr;
 }
 
 const std::set<Client*>& Channel::getMembers() const {
