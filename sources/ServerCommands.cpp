@@ -46,9 +46,9 @@ void Server::registerCommands() {
 	commands["KICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleKick(client, params);
 	};
-	/* commands["INVITE"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleKick(client, params);
-	}; */
+	commands["INVITE"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleInvite(client, params);
+	};
 }
 
 void Server::printChannelMap() {
@@ -357,4 +357,73 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	for (const std::string& param : params) {
 		std::cout << "- " << param << std::endl;
 	}
+}
+
+int Server::handleInviteParams(Client& client, const std::vector<std::string>& params) {
+	if (params.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "No nickname or channel specified");
+		return ERR;
+	}
+	if (params[0].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "No nickname specified");
+		return ERR;
+	}
+	if (params[1].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "No channel specified");
+		return ERR;
+	}
+	return SUCCESS;
+}
+
+void Server::handleInvite(Client& client, const std::vector<std::string>& params) {
+	if (handleKickParams(client, params) == ERR)
+		return;
+	std::string userToBeInvited = params[0];
+	std::string channelInvitedTo = params[1];
+	auto it = channelMap_.find(channelInvitedTo);
+	if (it == channelMap_.end()) {
+		logMessage(WARNING, "INVITE", "Channel " + channelInvitedTo + " does not exist");
+		return;
+	}
+	Channel* targetChannel = it->second;
+	const std::set<Client*>& members = targetChannel->getMembers();
+	if (members.find(&client) == members.end()) {
+		messageHandle(ERR_NOTONCHANNEL, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " not on channel " + channelInvitedTo);
+		return;
+	}
+	if (targetChannel->isInviteOnly() && !targetChannel->isOperator(&client)) {
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " does not have operator rights for invite-only channel " + channelInvitedTo);
+		return;
+	}
+	Client* clientToBeInvited = nullptr;
+	for (auto& pair : clients_) {
+		if (pair.second && pair.second->getNickname() == userToBeInvited) {
+			clientToBeInvited = pair.second.get();
+			break;
+		}
+	}
+	if (clientToBeInvited == nullptr) {
+		messageHandle(ERR_NOSUCHNICK, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + userToBeInvited + " does not exist");
+		return;
+	}
+	if (clientToBeInvited == &client) { // user can't invite themselves
+		logMessage(WARNING, "INVITE", "User " + client.getNickname() + " attempted to invite themselves to channel " + channelInvitedTo);
+		return;
+	}
+	if (members.find(clientToBeInvited) != members.end()) { // user to be invited already a member of the channel
+		messageHandle(ERR_USERONCHANNEL, *clientToBeInvited, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
+		return;
+	}
+	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
+	std::string confirmMessage = ":" + getServerName() + " " + std::to_string(RPL_INVITING) + " " +
+                                client.getNickname() + " " + userToBeInvited + " " + channelInvitedTo;
+    client.appendSendBuffer(confirmMessage);
+    logMessage(INFO, "INVITE", "User " + userToBeInvited + " invited to join channel " + channelInvitedTo + " by " + client.getNickname());
 }
