@@ -311,10 +311,40 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	return (false);
 }
 
-bool	Server::doesChannelExist(const std::string chnnelName) {
-	auto it = channelMap_.find(chnnelName);
-	if (it == channelMap_.end()) {
+// cross check with hager about the name and purpose
+Channel* Server::getChannelShahnaj(const std::string& channelName) {
+	auto it = channelMap_.find(channelName);
+	if (it != channelMap_.end()) {
+		return it->second;
+	}
+	return nullptr;
+}
+
+bool Server::isClientChannelMember(Channel *channel, Client& client) {
+	const std::set<Client*>& members = channel->getMembers();
+	if (members.find(&client) == members.end()) {
 		return false;
 	}
 	return true;
 }
+
+// }
+
+Client* Server::getClient(const std::string& nickName) {
+	for (auto& [fd, clientPtr] : clients_) {
+		if (clientPtr && stringCompCaseIgnore(clientPtr->getNickname(), nickName)) {
+			return clientPtr.get();  // return raw pointer from unique_ptr
+		}
+	}
+	return nullptr;  // not found
+}
+
+// bool Server::isClientChannelMember(Channel *channel, const std::string nickName) {
+// 	const std::set<Client*>& members = channel->getMembers();
+// 	for (Client* member : members) {
+// 		if (member && member->getNickname() == nickName) {
+// 			return true;   // Found a client with this nickname in the channel
+// 		}
+// 	}
+// 	return false; // Not found
+// }
