@@ -16,8 +16,10 @@ class Channel {
 		// std::string topic_setter_;  // is it needed? 
 		std::string key_;  				//password for joining protected channels
 		bool keyProtected_;
+		bool inviteOnly_;				// channel is invite only
 		std::set<Client*> members_;     // pointer to store clients
 		std::set<Client*> operators_;	// keep track of operator rights
+		std::set<Client*> invited_;		// list of invitees of the channel
 
 	public:
 		Channel(Client* client, const std::string &name, const std::string& );
@@ -27,6 +29,7 @@ class Channel {
 		//METHODS
 		bool isMember(Client* client);
 		void addChannelMember(Client *client);
+		void addInvite(Client* client);
 		void removeMember(Client *client);
 		static bool isValidChannelName(const std::string& name);
 		bool isOperator(Client* client) const;
@@ -36,6 +39,9 @@ class Channel {
 		void setChannelKey(const std::string& key);
 		void setOperator(Client* client, bool isOperator);
 		bool isKeyProtected();
+		bool isInviteOnly();
+		bool isClientInvited(Client* client) const;
+		void setInviteOnly(bool inviteOnly);
 		std::string getChannelName() const;
 		// std::string getTopic(); // make it const?
 		std::string getChannelKey() const;
