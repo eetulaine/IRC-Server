@@ -411,14 +411,49 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 
 	bool isChannel = false;
 	std::string sendTo = params[0];
+	Client *clientTo;
+		Channel *channelTo;
 	if (sendTo[0] == '#') {
 		isChannel = true;
-		sendTo.erase(0,1);
-		if (!doesChannelExist(sendTo)) {
-			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "Channel: " + sendTo + " does not exist");
+		//sendTo.erase(0,1);
+		channelTo = getChannelShahnaj(sendTo); // check the method
+		if (channelTo == nullptr) {
+			//messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
+			logMessage(ERROR, "PRIVMSG", "Channel: \"" + sendTo + "\" does not exist");
+			return ;
 		}
-
+		else if (!isClientChannelMember(channelTo, client)) {
+			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
+			logMessage(ERROR, "PRIVMSG", "Client is not a member of channel: \"" + sendTo + "\"");
+			return ;
+		}
+		logMessage(DEBUG, "PRIVMSG", "End of channel");
 	}
-	//std::string msgToSend;
+	else {
+		clientTo = getClient(sendTo);
+		if (clientTo == nullptr || (clientTo && !clientTo->isAuthenticated())) {
+			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", params);
+			logMessage(ERROR, "PRIVMSG", "No such nickname: \"" + sendTo + "\"");
+			return ;
+		}
+		logMessage(DEBUG, "PRIVMSG", "End of client");
+	}
+	std::string msgToSend;
+	if (params[1].length() > MAX_MSG_LEN) {
+		msgToSend = params[1].substr(0, MAX_MSG_LEN);
+	}
+	else
+		msgToSend = params[1];
+	logMessage(DEBUG, "PRIVMSG", "MSG: " + msgToSend);
+	if (isChannel) {
+		logMessage(DEBUG, "PRIVMSG", "Msg to client goes here");
+	}
+	else {
+		logMessage(DEBUG, "PRIVMSG", "Sending msg to client");
+		//clientTo->appendSendBuffer(msgToSend + "\r\n");
+		std::string finalMsg = clientTo->getClientIdentifier() + " PRIVMSG " + clientTo->getNickname() + " " + msgToSend;
+		messageHandle(5, clientTo, "PRIVMSG", finalMsg);
+	}
 }
+
+	//IO::sendCommand(recipient.fd, {getFullIdentifier(), "PRIVMSG", recipient.nickname + " " + message});
