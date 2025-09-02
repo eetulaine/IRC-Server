@@ -38,6 +38,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += ":No nickname given";
 	} else if (code == ERR_NICKNAMEINUSE) {
 		message += paramString + " :Nickname is already in use";
+	} else if (code == ERR_NOSUCHNICK) {
+		message += " No such Nickname available";
 	} else if (code == ERR_ERRONEUSNICKNAME) {
 		message += paramString + " :Erroneous nickname";
 	} else if (code == ERR_UNKNOWNCOMMAND) {
@@ -89,6 +91,10 @@ void Server::messageHandle(Client &client, std::string cmd, const std::vector<st
 		client.appendSendBuffer(message);
 	}
 }
+
+// void Server::messagePRIV(Client &client, std::string msg) {
+
+// }
 
 // for channel msg
 
