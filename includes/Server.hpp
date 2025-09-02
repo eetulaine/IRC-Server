@@ -104,6 +104,8 @@ class Server {
 		void		handleKick(Client& client, const std::vector<std::string>& params);
 		int			handleKickParams(Client& client, const std::vector<std::string>& params);
 		void		handlePrivMsg(Client& client, const std::vector<std::string>& params);
+		void		handleInvite(Client& client, const std::vector<std::string>& params);
+		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
 		// Message
