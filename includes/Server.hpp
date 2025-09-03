@@ -80,22 +80,26 @@ class Server {
 		std::string	getPassword() const;
 		std::string	getServerName() const;
 
-		/// dependent Methods for commands
-		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
-		bool		isUserDuplicate(std::string  userName);
-		bool		isNickDuplicate(std::string  userName);
-		bool		isNickUserValid(std::string cmd, std::string name);
 
-		// commands
-		void		handleNick(Client& client, const std::vector<std::string>& params);
+		// CLIENT
+		Client* getClient(const std::string& nickName);
+
 
 		// CHANNEL
 		void		handleJoin(Client& client, const std::vector<std::string>& params);
 		bool 		channelExists(const std::string& channelName);
 		Channel*	getChannel(const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
+
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
 
+		Channel*	getChannelShahnaj(const std::string& channelName);
+		bool		isClientChannelMember(Channel *channel, Client& client);
+		void		printChannelMap();
+
+
+		// COMMAND
+		void		handleNick(Client& client, const std::vector<std::string>& params);
 		void		handleUser(Client& client, const std::vector<std::string>& params);
 		void		handlePass(Client& client, const std::vector<std::string>& params);
 		void		handlePing(Client& client, const std::vector<std::string>& params);
@@ -104,18 +108,27 @@ class Server {
 		void		handleKick(Client& client, const std::vector<std::string>& params);
 		int			handleKickParams(Client& client, const std::vector<std::string>& params);
 		void		handlePrivMsg(Client& client, const std::vector<std::string>& params);
+
 		void		handleInvite(Client& client, const std::vector<std::string>& params);
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
 		void		handleTopic(Client& client, const std::vector<std::string>& params);
 		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
+
+		/// dependent Methods for commands
+		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
+		bool		isUserDuplicate(std::string  userName);
+		bool		isNickDuplicate(std::string  userName);
+		bool		isNickUserValid(std::string cmd, std::string name);
+
 		// Message
 		void		messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
 		void		messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
-  // CHANNEL
-		void		printChannelMap();
+
+
+
 
 };
 

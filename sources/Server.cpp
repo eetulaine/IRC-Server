@@ -284,10 +284,10 @@ bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &st
 
 	if (str1Lower == str2Lower)
 	{
-		return (SUCCESS);
+		return (true);
 	}
 	else
-		return (FAIL);
+		return (false);
 }
 
 // **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
@@ -296,10 +296,10 @@ bool Server::isUserDuplicate(std::string userName) {
 	for (auto& [fd, client] : this->clients_) {
 		if (client && stringCompCaseIgnore(client->getUsername(), userName))
 		{
-			return (SUCCESS); // Duplicate found
+			return (true); // Duplicate found
 		}
 	}
-	return (FAIL);   //  this exits after first client!
+	return (false);   //  this exits after first client!
 }
 
 bool	Server::isNickDuplicate(std::string  nickName) {
@@ -307,9 +307,46 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	for (auto& [fd, client] : this->clients_) {
 		if (client && stringCompCaseIgnore(client->getNickname(), nickName))
 		{
-			return (SUCCESS);// Duplicate found
+			return (true);// Duplicate found
 		}
 	}
-	return (FAIL);
+	return (false);
 }
 
+// cross check with hager about the name and purpose
+Channel* Server::getChannelShahnaj(const std::string& channelName) {
+	auto it = channelMap_.find(channelName);
+	if (it != channelMap_.end()) {
+		return it->second;
+	}
+	return nullptr;
+}
+
+bool Server::isClientChannelMember(Channel *channel, Client& client) {
+	const std::set<Client*>& members = channel->getMembers();
+	if (members.find(&client) == members.end()) {
+		return false;
+	}
+	return true;
+}
+
+// }
+
+Client* Server::getClient(const std::string& nickName) {
+	for (auto& [fd, clientPtr] : clients_) {
+		if (clientPtr && stringCompCaseIgnore(clientPtr->getNickname(), nickName)) {
+			return clientPtr.get();  // return raw pointer from unique_ptr
+		}
+	}
+	return nullptr;  // not found
+}
+
+// bool Server::isClientChannelMember(Channel *channel, const std::string nickName) {
+// 	const std::set<Client*>& members = channel->getMembers();
+// 	for (Client* member : members) {
+// 		if (member && member->getNickname() == nickName) {
+// 			return true;   // Found a client with this nickname in the channel
+// 		}
+// 	}
+// 	return false; // Not found
+// }

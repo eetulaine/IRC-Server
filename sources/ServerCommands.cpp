@@ -175,7 +175,7 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 		client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
 	}
 	else {
-		client.setNickname(params[0]);
+		client.setNickname(params[0] + std::to_string(client.getClientFD() - 4));
 		logMessage(INFO, "NICK", "Nickname set to " + client.getNickname());
 		if (client.isAuthenticated()) {
 			messageHandle(client, "NICK", params);
@@ -355,12 +355,74 @@ void Server::closeClient(Client& client) {
 }
 
 void Server::handlePrivMsg(Client& client, const std::vector<std::string>& params) {
-	(void)client;
-	(void)this;
 	for (const std::string& param : params) {
 		std::cout << "- " << param << std::endl;
 	}
+
+	// ERR_NOSUCHNICK  ERR_TOOMANYTARGETS ERR_CANNOTSENDTOCHAN
+	if (params.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "PRIVMSG", params);
+		logMessage(ERROR, "PRIVMSG", "No parameter provided");
+	}
+	else if (params[0].empty()) {
+		messageHandle(ERR_NORECIPIENT, client, "PRIVMSG", params);
+		logMessage(ERROR, "PRIVMSG", "No recipient to send msg");
+	}
+	else if (params[1].empty()) {
+		messageHandle(ERR_NOTEXTTOSEND, client, "PRIVMSG", params);
+		logMessage(ERROR, "PRIVMSG", "No text to send");
+	}
+
+	bool isChannel = false;
+	std::string target = params[0];
+	Client *clientTo;
+		Channel *channelTo;
+	if (target[0] == '#') {
+		isChannel = true;
+		//sendTo.erase(0,1);
+		channelTo = getChannelShahnaj(target); // check the method
+		if (channelTo == nullptr) {
+			//messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
+			logMessage(ERROR, "PRIVMSG", "Channel: \"" + target + "\" does not exist");
+			return ;
+		}
+		else if (!isClientChannelMember(channelTo, client)) {
+			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
+			logMessage(ERROR, "PRIVMSG", "Client is not a member of channel: \"" + target + "\"");
+			return ;
+		}
+		logMessage(DEBUG, "PRIVMSG", "End of channel");
+	}
+	else {
+		clientTo = getClient(target);
+		if (clientTo == nullptr || (clientTo && !clientTo->isAuthenticated())) {
+			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", params);
+			logMessage(ERROR, "PRIVMSG", "No such nickname: \"" + target + "\"");
+			return ;
+		}
+		logMessage(DEBUG, "PRIVMSG", "End of client");
+	}
+	std::string msgToSend;
+	if (params[1].length() > MAX_MSG_LEN) {
+		msgToSend = params[1].substr(0, MAX_MSG_LEN);
+	}
+	else
+		msgToSend = params[1];
+	logMessage(DEBUG, "PRIVMSG", "MSG: " + msgToSend);
+	if (isChannel) {
+		logMessage(DEBUG, "PRIVMSG", "Msg to client goes here");
+	}
+	else {
+		logMessage(DEBUG, "PRIVMSG", "Sending msg to client");
+		//clientTo->appendSendBuffer(msgToSend + "\r\n");
+		std::string finalMsg = client.getClientIdentifier() + " PRIVMSG " + clientTo->getNickname() + " " + msgToSend + "\r\n";
+		//messageHandle(5, clientTo, "PRIVMSG", finalMsg);
+		logMessage(DEBUG, "PRIVMSG", "FULL MSG: " + finalMsg);
+		//send(clientTo->getClientFD(), finalMsg.c_str(), finalMsg.size(), 0);
+		clientTo->appendSendBuffer(finalMsg);
+	}
 }
+
 
 int Server::handleInviteParams(Client& client, const std::vector<std::string>& params) {
 	if (params.empty()) {
@@ -490,3 +552,4 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 	targetChannel->setTopic(params[1]);
 	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
 }
+
