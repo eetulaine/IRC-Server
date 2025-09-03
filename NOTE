@@ -19,3 +19,8 @@ JOIN messsage:
 
 connect:
 irssi -c localhost -p 6667 -w qwerty
+
+
+/connect liberachat
+ /rawlog log.log
+ /rawlog OPEN log.log
