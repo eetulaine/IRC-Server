@@ -106,6 +106,8 @@ class Server {
 		void		handlePrivMsg(Client& client, const std::vector<std::string>& params);
 		void		handleInvite(Client& client, const std::vector<std::string>& params);
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
+		void		handleTopic(Client& client, const std::vector<std::string>& params);
+		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
 
 		// Message

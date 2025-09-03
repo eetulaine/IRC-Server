@@ -49,6 +49,9 @@ void Server::registerCommands() {
 	commands["INVITE"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleInvite(client, params);
 	};
+	commands["TOPIC"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleTopic(client, params);
+	};
 }
 
 void Server::printChannelMap() {
@@ -426,4 +429,64 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
                                 client.getNickname() + " " + userToBeInvited + " " + channelInvitedTo;
     client.appendSendBuffer(confirmMessage);
     logMessage(INFO, "INVITE", "User " + userToBeInvited + " invited to join channel " + channelInvitedTo + " by " + client.getNickname());
+}
+
+int Server::handleTopicParams(Client& client, const std::vector<std::string>& params) {
+	if (params.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "TOPIC", params);
+		logMessage(ERROR, "TOPIC", "No channel/topic specified");
+		return ERR;
+	}
+	if (params[0].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "TOPIC", params);
+		logMessage(ERROR, "TOPIC", "No channel specified");
+		return ERR;
+	}
+	return SUCCESS;
+}
+
+void Server::handleTopic(Client& client, const std::vector<std::string>& params) {
+	if (handleTopicParams(client, params) == ERR)
+		return;
+	std::string channel = params[0];
+	bool topicGiven = true;
+	if (params[1].empty()) {
+		topicGiven = false;
+	}
+	auto it = channelMap_.find(channel); // confirm the channel exists
+	if (it == channelMap_.end()) {
+		logMessage(WARNING, "TOPIC", "Channel " + channel + " does not exist");
+		return;
+	}
+	Channel* targetChannel = it->second;
+	logMessage(DEBUG, "TOPIC", "CURRENT TOPIC: " + targetChannel->getTopic());
+	if (!topicGiven && targetChannel->getTopic().empty()) { // if topic not given and channel topic has not been set, print "no topic"
+		messageHandle(RPL_NOTOPIC, client, "TOPIC", params);
+		logMessage(WARNING, "TOPIC", "No topic set for channel " + channel);
+		return;
+	}
+	else if (!topicGiven) { // if topic not given as argument and topic is already set for channel, print the topic
+		messageHandle(RPL_TOPIC, client, "TOPIC", params);
+		logMessage(DEBUG, "TOPIC", targetChannel->getTopic());
+		return;
+	}
+	const std::set<Client*>& members = targetChannel->getMembers();
+	if (members.find(&client) == members.end()) { // if user wanting to set the topic has not joined the channel they can't set the topic
+		messageHandle(ERR_NOTONCHANNEL, client, "TOPIC", params);
+		logMessage(ERROR, "TOPIC", "User " + client.getNickname() + " not on channel " + channel);
+		return;
+	}
+	if (topicGiven && !targetChannel->isTopicOperatorOnly()) { // if topic is given and the mode +t has not been set we can set the topic
+		targetChannel->setTopic(params[1]);
+		logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
+		return;
+	}
+	else if (topicGiven && targetChannel->isTopicOperatorOnly()) { // if topic can be set by operators only (mode +t), either set the topic if user is operator or print error
+		if (!targetChannel->isOperator(&client)) {
+			logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
+			return;
+		}
+	}
+	targetChannel->setTopic(params[1]);
+	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
 }
