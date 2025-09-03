@@ -24,14 +24,14 @@ class Client {
 		std::string hostname_;
 		std::string realName_;
 		std::string password_;
+		std::set<std::string> joinedChannels_;    // keeps track of joined channels
 		bool authenticated_;
 		bool connected_;
 		bool isPassValid_;
 
 		// PRIVATE MEMBER FUNCTIONS
 		bool isSocketValid() const;
-		std::set<std::string> joinedChannels_;    // keeps track of joined channels
-
+		
 	public:
 		Client(int clientFD, std::string clientIP, int epollFd);
 		~Client();
