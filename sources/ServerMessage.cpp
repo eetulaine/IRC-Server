@@ -32,7 +32,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += cmd + " :Not enough parameters";
 	} else if (code == ERR_PASSWDMISMATCH) {
 		message += ":Password incorrect";
-	} else if (code == ERR_ALREADYREGISTRED) {
+	} else if (code == ERR_ALREADYREGISTERED) {
 		message += ":Unauthorized command (already registered)";
 	} else if (code == ERR_NONICKNAMEGIVEN) {
 		message += ":No nickname given";
@@ -57,9 +57,10 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
 		message += "Unknown MODE flag";
 	} else if (code == RPL_WHOISUSER) {
-		message += "You are known as " + client.getNickname();
+		message += client.getNickname() + " " + client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
 	} else if (code == RPL_PONG) {
 		message = ":" + this->serverName_ + " PONG "+ this->serverName_;
+		logMessage(DEBUG, "PONG", "PONG response to ping. Client FD: " + std::to_string(client.getClientFD()));
 	} else if (code == ERR_ERRONEUSUSER) {
 		message += paramString + " :Erroneous format";
 	//last
