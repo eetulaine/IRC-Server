@@ -211,7 +211,7 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 		client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
 	}
 	else {
-		client.setNickname(params[0]);
+		client.setNickname(params[0] + std::to_string(client.getClientFD() - 4));
 		logMessage(INFO, "NICK", "Nickname set to " + client.getNickname());
 		if (client.isAuthenticated()) {
 			messageHandle(client, "NICK", params);
@@ -410,30 +410,30 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	}
 
 	bool isChannel = false;
-	std::string sendTo = params[0];
+	std::string target = params[0];
 	Client *clientTo;
 		Channel *channelTo;
-	if (sendTo[0] == '#') {
+	if (target[0] == '#') {
 		isChannel = true;
 		//sendTo.erase(0,1);
-		channelTo = getChannelShahnaj(sendTo); // check the method
+		channelTo = getChannelShahnaj(target); // check the method
 		if (channelTo == nullptr) {
 			//messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "Channel: \"" + sendTo + "\" does not exist");
+			logMessage(ERROR, "PRIVMSG", "Channel: \"" + target + "\" does not exist");
 			return ;
 		}
 		else if (!isClientChannelMember(channelTo, client)) {
 			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "Client is not a member of channel: \"" + sendTo + "\"");
+			logMessage(ERROR, "PRIVMSG", "Client is not a member of channel: \"" + target + "\"");
 			return ;
 		}
 		logMessage(DEBUG, "PRIVMSG", "End of channel");
 	}
 	else {
-		clientTo = getClient(sendTo);
+		clientTo = getClient(target);
 		if (clientTo == nullptr || (clientTo && !clientTo->isAuthenticated())) {
 			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "No such nickname: \"" + sendTo + "\"");
+			logMessage(ERROR, "PRIVMSG", "No such nickname: \"" + target + "\"");
 			return ;
 		}
 		logMessage(DEBUG, "PRIVMSG", "End of client");
@@ -451,8 +451,11 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	else {
 		logMessage(DEBUG, "PRIVMSG", "Sending msg to client");
 		//clientTo->appendSendBuffer(msgToSend + "\r\n");
-		std::string finalMsg = clientTo->getClientIdentifier() + " PRIVMSG " + clientTo->getNickname() + " " + msgToSend;
-		messageHandle(5, clientTo, "PRIVMSG", finalMsg);
+		std::string finalMsg = client.getClientIdentifier() + " PRIVMSG " + clientTo->getNickname() + " " + msgToSend + "\r\n";
+		//messageHandle(5, clientTo, "PRIVMSG", finalMsg);
+		logMessage(DEBUG, "PRIVMSG", "FULL MSG: " + finalMsg);
+		//send(clientTo->getClientFD(), finalMsg.c_str(), finalMsg.size(), 0);
+		clientTo->appendSendBuffer(finalMsg);
 	}
 }
 
