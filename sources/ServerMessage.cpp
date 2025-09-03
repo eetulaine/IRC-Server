@@ -39,7 +39,9 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_NICKNAMEINUSE) {
 		message += paramString + " :Nickname is already in use";
 	} else if (code == ERR_NOSUCHNICK) {
-		message += " No such Nickname available";
+		message += paramString + " :No such nick/channel";
+	} else if (code == ERR_CANNOTSENDTOCHAN) {
+		message += paramString + " :Cannot send to channel";
 	} else if (code == ERR_ERRONEUSNICKNAME) {
 		message += paramString + " :Erroneous nickname";
 	} else if (code == ERR_UNKNOWNCOMMAND) {
