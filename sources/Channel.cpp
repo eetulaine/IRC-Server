@@ -5,7 +5,7 @@
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false), inviteOnly_(true) {
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(true), topicOperatorOnly_(true), topic_("") {
 
 	if(!key.empty())
 		setChannelKey(key);
@@ -96,6 +96,23 @@ bool Channel::checkForChannelKey(Channel* channel, Client* client, const std::st
 	return true;
 }
 
+// TOPIC ACCESSORS
+
+bool Channel::isTopicOperatorOnly() const {
+	return topicOperatorOnly_;
+}
+
+std::string Channel::getTopic() const {
+	return topic_;
+}
+
+void Channel::setTopic(const std::string& topic) {
+	topic_ = topic;
+}
+
+void Channel::setTopicOperatorOnly(bool topicOperatorOnly) {
+	topicOperatorOnly_ = topicOperatorOnly;
+}
 
 // ACCESSORS
 void Channel::setChannelKey(const std::string& key) {
