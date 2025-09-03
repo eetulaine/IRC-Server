@@ -9,6 +9,9 @@
 #define RPL_ISUPPORT	 		005
 #define RPL_UMODEIS 			221 // test
 #define RPL_WHOISUSER 			311
+#define RPL_NOTOPIC				331
+#define RPL_TOPIC				332
+#define RPL_INVITING			341
 #define RPL_PONG 				399
 
 // ****************ERROR CODES************** //
@@ -28,10 +31,13 @@
 #define ERR_ERRONEUSUSER 		434 // Erroneous username
 #define ERR_USERNOTINCHANNEL	441 // target user of a command not on given channel
 #define ERR_NOTONCHANNEL		442 // client attempting a channel affecting command not a member on the channel
+#define ERR_USERONCHANNEL		443 // user already on the channel they were invited to
 #define ERR_NOTREGISTERED 		451 // client tries to execute a command before completing registration
 #define ERR_NEEDMOREPARAMS 		461 // Not enough parameters
 #define ERR_ALREADYREGISTRED	462 // Tries when already registered
 #define ERR_PASSWDMISMATCH		464 // incorrect password
+#define ERR_INVITEONLYCHAN		473 // trying to join an invite-only channel without invitation
 #define ERR_BADCHANNELKEY		475
 #define ERR_BADCHANMASK			479 // channel name does not match the proper syntax
+#define	ERR_CHANOPRIVSNEEDED	482 // user doesn't have the required channel operator rights
 #define ERR_UMODEUNKNOWNFLAG	501

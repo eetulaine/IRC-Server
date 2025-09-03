@@ -149,6 +149,8 @@ void Server::processBuffer(Client& client) {
 		logMessage(WARNING, "COMMAND", "C[" + commandStr + "], P[" + params[0] + "]");
 		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
 			return handleQuit(client, params);
+		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated())
+			messageHandle(ERR_NOTREGISTERED, client, "JOIN", params);
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
 			logMessage(WARNING, "COMMAND", "Unknown command: [" + commandStr + "] param[0]: " + params[0] + std::to_string(client.getClientFD()));

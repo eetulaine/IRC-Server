@@ -46,7 +46,12 @@ void Server::registerCommands() {
 	commands["KICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleKick(client, params);
 	};
-
+	commands["INVITE"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleInvite(client, params);
+	};
+	commands["TOPIC"] = [this](Client& client, const std::vector<std::string>& params) {
+		handleTopic(client, params);
+	};
 }
 
 void Server::printChannelMap() {
@@ -60,7 +65,7 @@ void Server::printChannelMap() {
 
         // Access specific properties of the channel
         std::cout << "  Channel Key: " << channel->getChannelKey() << std::endl;
-        std::cout << "  Requires Password: " << (channel->requiresPassword() ? "Yes" : "No") << std::endl;
+        std::cout << "  Requires Password: " << (channel->isKeyProtected() ? "Yes" : "No") << std::endl;
     }
 }
 
@@ -77,92 +82,51 @@ std::vector<std::string> split(const std::string& input, const char delmiter) {
     return tokens;
 }
 
-/**
- * @breif Handles each requested channel from JOIN command.
- */
-void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
 
+void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
 	if (params.empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "JOIN", params);
 		logMessage(ERROR, "CHANNEL", "Not enough parameters");
-		return ;
-	}
-
-	else if (!client.isAuthenticated())
-	{
-		messageHandle(ERR_NOTREGISTERED, client, "JOIN", params);
 		return;
 	}
 
-    std::vector<std::string>  requestedChannels = split(params[0], ',');
-    std::vector<std::string>  keys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
+	std::vector<std::string> requestedChannels = split(params[0], ',');
+	std::vector<std::string> providedKeys = (params.size() > 1) ? split(params[1], ',') : std::vector<std::string>{};
 
-    for (size_t i = 0; i < requestedChannels.size(); i++) {
-        const std::string& channelName = requestedChannels[i];
-        const std::string& channelKey = (i < keys.size()) ? keys[i] : ""; 	// -> How should we validate channel key..?
+	for (size_t i = 0; i < requestedChannels.size(); i++) {
+		const std::string& channelName = requestedChannels[i];
+		const std::string& channelKey = (i < providedKeys.size()) ? providedKeys[i] : "";
 
-		if (Channel::isValidChannelName(channelName) == false) {
-			messageHandle(ERR_BADCHANMASK, client, "JOIN", params);
+		if (!Channel::isValidChannelName(channelName)) {
+			//messageHandle(ERR_BADCHANMASK, client, channelName, std::vector<std::string>{channelName});
 			logMessage(ERROR, "CHANNEL " + channelName, "Invalid channel name");
 			continue;
 		}
-
-		if (channeClientlExist(&client, channelName)) {
-			Channel* channel = getChannel(&client, channelName);
-			if (channel->requiresPassword()) {
-				if (channelKey.empty()) {  // check with multiple keys, not always empty
-	                messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
-	                logMessage(ERROR, "CHANNEL " + channel->getChannelName(),
-	                    "Key required to join the channel: Client " + client.getNickname() + " failed to join");
-            		continue;;
-				}
-				else {
-					if (channel->getChannelKey() != channelKey) {
-						messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
-                		logMessage(ERROR, "CHANNEL " + channel->getChannelName(),
-                           "Keys do not match: " + client.getNickname() + " failed to join");
-                		continue;
-					}
-					else
-						logMessage(ERROR, "CHANNEL", ": joined key protected channel!: " + channelName);
-
-				}
-			}
-			logMessage(WARNING, "CHANNEL " + channelName,
-            	": Client '" + client.getNickname() + "' is already a member");
+		if (client.isInChannel(channelName)) {
+			logMessage(WARNING, "CLIENT" + channelName,
+				"Client '" + client.getUsername() + "' is already a member");
 			continue;
 		}
-        Channel* channel = getChannel(&client, channelName);
-        if (!channel) {
-			channel = createChannel(&client, channelName, channelKey);
-			channel->addMember(&client);
-			if (!channel)
-				logMessage(ERROR, "SERVER", ": Failed to create channel: " + channelName);
-		}
-        else {
-			if (channel->requiresPassword()) {
-				if (channelKey.empty()) {  // check with multiple keys, not always empty
-	                messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
-	                logMessage(ERROR, "CHANNEL " + channel->getChannelName(),
-	                    "Key required to join the channel: Client " + client.getNickname() + " failed to join");
-            		continue;;
-				}
-				else {
-					if (channel->getChannelKey() != channelKey) {
-						messageHandle(ERR_BADCHANNELKEY, client, "JOIN", params);
-                		logMessage(ERROR, "CHANNEL " + channel->getChannelName(),
-                           "Keys do not match: " + client.getNickname() + " failed to join");
-                		continue;
-					}
-					else
-						logMessage(ERROR, "CHANNEL", ": joined key protected channel!: " + channelName);
 
-				}
+		Channel* channel = nullptr;
+		if (channelExists(channelName)) {
+			channel = getChannel(channelName);
+			if (!channel->checkForChannelKey(channel, &client, channelKey)) {
+				//messageHandle();
+				continue;
 			}
-        }
-    }
+		}	// check for channel resterictions??
+		else {
+			channel = createChannel(&client, channelName, channelKey);
+			if (!channel) {
+				logMessage(ERROR, "CHANNEL", "Failed to create channel: " + channel->getChannelName());
+				continue;
+			}
+		}
+		channel->addChannelMember(&client);
+		client.addToJoinedChannelList(channel->getChannelName());
+	}
 }
-
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
 	// for (const std::string& param : params) {
@@ -345,10 +309,10 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 		logMessage(ERROR, "KICK", "User " + client.getNickname() + " not on channel " + channel);
 		return;
 	}
-
-	// ADD A CHECK WHETHER USER HAS OPERATOR RIGHTS!!
-	// if (!targetChannel->isOperator(&client)) {}
-
+	if (!targetChannel->isOperator(&client)) { // check whether the user has operator rights on the channel
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, params);
+		logMessage(ERROR, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
+	}
 	Client* clientToKick = nullptr;
 	for (Client* member : members) {
 		if (member->getNickname() == userToKick) {
@@ -361,7 +325,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 		return; //comment this out if user can self-kick
 	}
 	if (clientToKick == nullptr) {
-		messageHandle(ERR_USERNOTINCHANNEL, client, userToKick + " " + channel, params);
+		messageHandle(ERR_USERNOTINCHANNEL, client, "KICK", params);
 		logMessage(ERROR, "KICK", "User " + userToKick + " not found on channel " + channel);
 		return;
 	}
@@ -459,4 +423,133 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	}
 }
 
-	//IO::sendCommand(recipient.fd, {getFullIdentifier(), "PRIVMSG", recipient.nickname + " " + message});
+
+int Server::handleInviteParams(Client& client, const std::vector<std::string>& params) {
+	if (params.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "No nickname or channel specified");
+		return ERR;
+	}
+	if (params[0].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "No nickname specified");
+		return ERR;
+	}
+	if (params[1].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "No channel specified");
+		return ERR;
+	}
+	return SUCCESS;
+}
+
+void Server::handleInvite(Client& client, const std::vector<std::string>& params) {
+	if (handleKickParams(client, params) == ERR)
+		return;
+	std::string userToBeInvited = params[0];
+	std::string channelInvitedTo = params[1];
+	auto it = channelMap_.find(channelInvitedTo);
+	if (it == channelMap_.end()) {
+		logMessage(WARNING, "INVITE", "Channel " + channelInvitedTo + " does not exist");
+		return;
+	}
+	Channel* targetChannel = it->second;
+	const std::set<Client*>& members = targetChannel->getMembers();
+	if (members.find(&client) == members.end()) {
+		messageHandle(ERR_NOTONCHANNEL, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " not on channel " + channelInvitedTo);
+		return;
+	}
+	if (targetChannel->isInviteOnly() && !targetChannel->isOperator(&client)) {
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " does not have operator rights for invite-only channel " + channelInvitedTo);
+		return;
+	}
+	Client* clientToBeInvited = nullptr;
+	for (auto& pair : clients_) {
+		if (pair.second && pair.second->getNickname() == userToBeInvited) {
+			clientToBeInvited = pair.second.get();
+			break;
+		}
+	}
+	if (clientToBeInvited == nullptr) {
+		messageHandle(ERR_NOSUCHNICK, client, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + userToBeInvited + " does not exist");
+		return;
+	}
+	if (clientToBeInvited == &client) { // user can't invite themselves
+		logMessage(WARNING, "INVITE", "User " + client.getNickname() + " attempted to invite themselves to channel " + channelInvitedTo);
+		return;
+	}
+	if (members.find(clientToBeInvited) != members.end()) { // user to be invited already a member of the channel
+		messageHandle(ERR_USERONCHANNEL, *clientToBeInvited, "INVITE", params);
+		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
+		return;
+	}
+	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
+	std::string confirmMessage = ":" + getServerName() + " " + std::to_string(RPL_INVITING) + " " +
+                                client.getNickname() + " " + userToBeInvited + " " + channelInvitedTo;
+    client.appendSendBuffer(confirmMessage);
+    logMessage(INFO, "INVITE", "User " + userToBeInvited + " invited to join channel " + channelInvitedTo + " by " + client.getNickname());
+}
+
+int Server::handleTopicParams(Client& client, const std::vector<std::string>& params) {
+	if (params.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "TOPIC", params);
+		logMessage(ERROR, "TOPIC", "No channel/topic specified");
+		return ERR;
+	}
+	if (params[0].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "TOPIC", params);
+		logMessage(ERROR, "TOPIC", "No channel specified");
+		return ERR;
+	}
+	return SUCCESS;
+}
+
+void Server::handleTopic(Client& client, const std::vector<std::string>& params) {
+	if (handleTopicParams(client, params) == ERR)
+		return;
+	std::string channel = params[0];
+	bool topicGiven = true;
+	if (params[1].empty()) {
+		topicGiven = false;
+	}
+	auto it = channelMap_.find(channel); // confirm the channel exists
+	if (it == channelMap_.end()) {
+		logMessage(WARNING, "TOPIC", "Channel " + channel + " does not exist");
+		return;
+	}
+	Channel* targetChannel = it->second;
+	logMessage(DEBUG, "TOPIC", "CURRENT TOPIC: " + targetChannel->getTopic());
+	if (!topicGiven && targetChannel->getTopic().empty()) { // if topic not given and channel topic has not been set, print "no topic"
+		messageHandle(RPL_NOTOPIC, client, "TOPIC", params);
+		logMessage(WARNING, "TOPIC", "No topic set for channel " + channel);
+		return;
+	}
+	else if (!topicGiven) { // if topic not given as argument and topic is already set for channel, print the topic
+		messageHandle(RPL_TOPIC, client, "TOPIC", params);
+		logMessage(DEBUG, "TOPIC", targetChannel->getTopic());
+		return;
+	}
+	const std::set<Client*>& members = targetChannel->getMembers();
+	if (members.find(&client) == members.end()) { // if user wanting to set the topic has not joined the channel they can't set the topic
+		messageHandle(ERR_NOTONCHANNEL, client, "TOPIC", params);
+		logMessage(ERROR, "TOPIC", "User " + client.getNickname() + " not on channel " + channel);
+		return;
+	}
+	if (topicGiven && !targetChannel->isTopicOperatorOnly()) { // if topic is given and the mode +t has not been set we can set the topic
+		targetChannel->setTopic(params[1]);
+		logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
+		return;
+	}
+	else if (topicGiven && targetChannel->isTopicOperatorOnly()) { // if topic can be set by operators only (mode +t), either set the topic if user is operator or print error
+		if (!targetChannel->isOperator(&client)) {
+			logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
+			return;
+		}
+	}
+	targetChannel->setTopic(params[1]);
+	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
+}
+

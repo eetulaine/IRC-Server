@@ -87,12 +87,16 @@ class Server {
 
 		// CHANNEL
 		void		handleJoin(Client& client, const std::vector<std::string>& params);
-		bool		channeClientlExist(Client* client, const std::string& channelName);
-		Channel*	getChannel(Client* client, const std::string& channelName);
+		bool 		channelExists(const std::string& channelName);
+		Channel*	getChannel(const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
+
+		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
+
 		Channel*	getChannelShahnaj(const std::string& channelName);
 		bool		isClientChannelMember(Channel *channel, Client& client);
 		void		printChannelMap();
+
 
 		// COMMAND
 		void		handleNick(Client& client, const std::vector<std::string>& params);
@@ -104,6 +108,13 @@ class Server {
 		void		handleKick(Client& client, const std::vector<std::string>& params);
 		int			handleKickParams(Client& client, const std::vector<std::string>& params);
 		void		handlePrivMsg(Client& client, const std::vector<std::string>& params);
+
+		void		handleInvite(Client& client, const std::vector<std::string>& params);
+		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
+		void		handleTopic(Client& client, const std::vector<std::string>& params);
+		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
+		//void handlePass(Client& client, const std::vector<std::string>& params);
+
 
 		/// dependent Methods for commands
 		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);

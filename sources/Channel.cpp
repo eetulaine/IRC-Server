@@ -1,77 +1,66 @@
 #include "Channel.hpp"
 #include "../includes/macros.hpp"
 #include "../includes/Server.hpp"
-
+#include "../includes/responseCodes.hpp"
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false) {
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(true), topicOperatorOnly_(true), topic_("") {
 
 	if(!key.empty())
 		setChannelKey(key);
 
-	logMessage(INFO, "CHANNEL " + this->getChannelName(),": New channel created, Name: ["
-        + this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
+	logMessage(INFO, "CHANNEL", "Channel created. Name: [" 
+		+ this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
-		std::cout << GREEN "Client " << client->getNickname() << " is operator" END_COLOR << std::endl;
+		logMessage(DEBUG, "CLIENT", "Client " + client->getNickname() + " is operator");
 }
 
 Channel::~Channel() {
-	logMessage(WARNING, "CHANNEL " + this->getChannelName(), ": Channel destroyed");
+	logMessage(WARNING, "CHANNEL", ": Channel destroyed");
 }
 
 
 //PUBLIC METHODS
-void Channel::addMember(Client *client) {
-
-	//   std::cout <<  "HEEEEEEEEEE\n";
-    // Check if client already exists using find()
-    // if (members_.find(client) != members_.end()) {
-    //     logMessage(WARNING, "CHANNEL " + this->getChannelName(),
-    //               ": Client '" + client->getNickname() + "' is already a member.");
-    //     return;
-    // }
-    // std::cout <<  "HOOOOOOOOO\n";
-    // Client doesn't exist - add them
-    members_.insert(client);
-
-	client->activeChannels(this->getChannelName());
-
-    logMessage(INFO, "CHANNEL " + this->getChannelName(),
-              ": New member joined: " + client->getNickname());
+void Channel::addChannelMember(Client *client) {
+	members_.insert(client);
+	logMessage(INFO, "CHANNEL", this->getChannelName() + 
+		": Client " +  client->getNickname() + " Joined");
 }
 
 void Channel::removeMember(Client *client) {
 
-	size_t status =  members_.erase(client);
-	if (status)
-		std::cout << "Member <" << client->getNickname() << "> is removed from" << name_ << "channel\n";
-	else
-		std::cout << "Menber <" << client->getNickname() << "> was not found in channel\n";
+ 	size_t status =  members_.erase(client);
+ 	if (status)
+ 		std::cout << "Member <" << client->getNickname() << "> is removed from" << name_ << "channel\n";
+ 	else
+ 		std::cout << "Menber <" << client->getNickname() << "> was not found in channel\n";
+ }
+
+ void Channel::addInvite(Client *client) {
+	invited_.insert(client);
+	logMessage(DEBUG, "CHANNEL", this->getChannelName() + 
+		": Client " +  client->getNickname() + " added to invited list");
 }
 
-Channel* Server::createChannel(Client* client, const std::string& channelName, const std::string& channelKey) {
-
-    Channel* newChannel = new Channel(client, channelName, channelKey);
-
-	// check for memory allocation!
-    channelMap_[channelName] = newChannel; // server stores and keeps track of created channels
-
-    return newChannel;
-}
-
-bool Channel::requiresPassword() {
+bool Channel::isKeyProtected() {
 	return (this->keyProtected_);
 }
 
-bool Channel::checkChannelKey(const std::string& providedKey) {
-	if (!requiresPassword())
-		return true;
-	if (providedKey.empty())
-		return false;
-	return (this->key_ == providedKey);
+bool Channel::isInviteOnly() {
+	return inviteOnly_;
+}
 
+bool Channel::isClientInvited(Client* client) const {
+	auto it = invited_.find(client);
+	if (it != invited_.end())
+		return true;
+	return false;
+}
+
+bool Channel::isOperator(Client* client) const {
+	return operators_.find(client) != operators_.end();
 }
 
 bool Channel::isValidChannelName(const std::string& name) {
@@ -89,6 +78,41 @@ bool Channel::isValidChannelName(const std::string& name) {
 	return true;
 }
 
+bool Channel::checkForChannelKey(Channel* channel, Client* client, const std::string& providedKey) {
+
+	if (!channel->isKeyProtected())
+		return true;
+	if (providedKey.empty()) {
+		logMessage(ERROR, "CHANNEL",
+			"Key required: " + client->getNickname() + " failed to join");
+		return false;
+	}
+	if (getChannelKey() != providedKey) {
+		logMessage(ERROR, "CHANNEL",
+			"Incorrect key: " + client->getNickname() + " failed to join");
+		return false;
+	}
+	logMessage(INFO, "CHANNEL", "Joined key-protected channel: " + getChannelName());
+	return true;
+}
+
+// TOPIC ACCESSORS
+
+bool Channel::isTopicOperatorOnly() const {
+	return topicOperatorOnly_;
+}
+
+std::string Channel::getTopic() const {
+	return topic_;
+}
+
+void Channel::setTopic(const std::string& topic) {
+	topic_ = topic;
+}
+
+void Channel::setTopicOperatorOnly(bool topicOperatorOnly) {
+	topicOperatorOnly_ = topicOperatorOnly;
+}
 
 // ACCESSORS
 void Channel::setChannelKey(const std::string& key) {
@@ -97,31 +121,24 @@ void Channel::setChannelKey(const std::string& key) {
 	keyProtected_ = !key.empty();
 }
 
+void Channel::setInviteOnly(bool inviteOnly) {
+	inviteOnly_ = inviteOnly;
+}
+
 std::string Channel::getChannelKey() const {
 	return this->key_;
 }
-
 
 std::string Channel::getChannelName() const {
 	return this->name_;
 }
 
-bool Server::channeClientlExist(Client* client, const std::string& channelName) {
-	if (channelMap_.find(channelName) != channelMap_.end() && client->activeChannels(channelName) == true)
-		return true;
-    return (false);
-}
-
-
-Channel* Server::getChannel(Client* client, const std::string& channelName) {
-	(void)client;
+Channel* Server::getChannel(const std::string& channelName) {
 	auto it = channelMap_.find(channelName);
-	if (it != channelMap_.end()) {
-		// logMessage(WARNING, "CHANNEL " + channelName,
-		//     ": Client '" + client->getNickname() + "' is already a member");
+	if (it != channelMap_.end())
 		return it->second;
-	}
 	return nullptr;
+
 }
 
 const std::set<Client*>& Channel::getMembers() const {
@@ -132,10 +149,6 @@ const std::set<Client*>& Channel::getOperators() const {
 	return operators_;
 }
 
-bool Channel::isOperator(Client* client) const {
-	return operators_.find(client) != operators_.end();
-}
-
 void Channel::setOperator(Client* client, bool isOperator) {
 	if (isOperator)
 		operators_.insert(client);
@@ -143,7 +156,3 @@ void Channel::setOperator(Client* client, bool isOperator) {
 		operators_.erase(client);
 
 }
-
-// std::string Channel::getTopic() {
-// 	return this->topic_;
-// }
