@@ -13,7 +13,7 @@ This project focuses on:
 
 
 ### ⏳ Project Status
-LOADING.......(1%)
+LOADING.......(75%)
 
 
 
