@@ -95,16 +95,41 @@ void Server::messageHandle(Client &client, std::string cmd, const std::vector<st
 	}
 }
 
-// void Server::messagePRIV(Client &client, std::string msg) {
+void Server::messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend) {
+	// check conditions
+	std::string finalMsg = fromClient.getClientIdentifier() + " " + command + " " + targetClient.getNickname() + " " + msgToSend + "\r\n";
+	targetClient.appendSendBuffer(finalMsg);
+}
 
-// }
+void Server::messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend, std::string channelName) {
+	// check conditions
+	std::string finalMsg = fromClient.getClientIdentifier() + " " + command + " " + channelName + " " + msgToSend + "\r\n";
+	targetClient.appendSendBuffer(finalMsg);
+}
 
-// for channel msg
 
-// void Server::messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params) {
-// 	if (!code)
-// 		return ;
-// 	std::string message = createMessage(code, client, cmd, params);
-// 	client.appendSendBuffer(message);
-// }
+void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend) {
+	// check conditions
+	if (!isClientChannelMember(&targetChannel, fromClient)) {
+		messageHandle(ERR_NOTONCHANNEL, fromClient, command, {msgToSend});
+		logMessage(ERROR, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getChannelName());
+		return ;
+	}
 
+	const std::set<Client*>& clients = targetChannel.getMembers();
+
+	for (Client* targetClient : clients) {
+		if (command == "PRIVMSG") {
+			if (targetClient->getClientFD() != fromClient.getClientFD()) {
+				if (isClientChannelMember(&targetChannel, *targetClient)) {
+					messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getChannelName());
+				}
+			}
+		}
+		else {
+			if (isClientChannelMember(&targetChannel, *targetClient)) {
+				messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getChannelName());
+			}
+		}
+	}
+}
