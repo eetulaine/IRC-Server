@@ -1,3 +1,0 @@
-PASS 123456
-NICK testnick
-USER testuser IRCS_SERV 127.0.0.1 :Test User

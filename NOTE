@@ -19,6 +19,3 @@ JOIN messsage:
 
 connect:
 irssi -c localhost -p 6667 -w qwerty
-
-launch netcat with config file:
-nc -C 127.0.0.1 6667 < config.txt

@@ -35,6 +35,7 @@ class Server {
 		int			port_;
 		std::string	password_;
 		int			serverSocket_;
+		static volatile sig_atomic_t isRunning_;
 		struct addrinfo		hints_, *res_;
 		const std::string	serverName_ = "IRCS_SERV";
 			// CHANNEL ----- Hager -----
@@ -48,6 +49,8 @@ class Server {
 		void		setSocketOption();		//-> set socket option to reuse address to avoid "address already in use" error
 		void		bindSocket();			//-> bind the socket to the address
 		void		initListen();			//-> prepare to listen for incoming connections
+		static void	stop(int signum);		//-> signal handler
+		void		customSignals(bool customSignals);
 
 		// dependent methods for "ServerActivity"
 		void		acceptNewClient(int epollFd); //-> accept new client request
@@ -72,7 +75,7 @@ class Server {
 		void		startServer();			//-> The loop, that will keep the server running and do diff actions
 		void		processBuffer(Client& client);
 		void		registerCommands();
-		void		closeServer();
+		void		closeServer(int epollFd);
 		void		closeClient(Client& client);
 
 		int			getPort() const;
