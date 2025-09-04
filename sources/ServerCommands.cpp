@@ -354,6 +354,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 		// MESSAGE client they don't have the operator rights to kick another user
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, params);
 		logMessage(ERROR, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
+		return;
 	}
 	Client* clientToKick = nullptr;
 	for (Client* member : members) {
