@@ -30,6 +30,7 @@ Server::~Server() {
 }
 
 void Server::closeServer(int epollFD) {
+	logMessage(INFO, "SERVER", "Server closing [closeServer()]");
 	if (epollFD)
 		close(epollFD);
 	if (serverSocket_ >= 0)
