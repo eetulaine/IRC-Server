@@ -13,7 +13,7 @@ class Channel {
 	private:
 		std::string name_;
 		// std::string topic_;
-		// std::string topic_setter_;  // is it needed? 
+		// std::string topic_setter_;  // is it needed?
 		std::string key_;  				//password for joining protected channels
 		bool keyProtected_;
 		bool inviteOnly_;				// channel is invite only
@@ -27,7 +27,7 @@ class Channel {
 		Channel(Client* client, const std::string &name, const std::string& );
 		~Channel();
 
-		
+
 		//METHODS
 		bool isMember(Client* client);
 		void addChannelMember(Client *client);

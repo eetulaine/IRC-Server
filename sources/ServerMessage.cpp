@@ -32,12 +32,16 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += cmd + " :Not enough parameters";
 	} else if (code == ERR_PASSWDMISMATCH) {
 		message += ":Password incorrect";
-	} else if (code == ERR_ALREADYREGISTRED) {
+	} else if (code == ERR_ALREADYREGISTERED) {
 		message += ":Unauthorized command (already registered)";
 	} else if (code == ERR_NONICKNAMEGIVEN) {
 		message += ":No nickname given";
 	} else if (code == ERR_NICKNAMEINUSE) {
 		message += paramString + " :Nickname is already in use";
+	} else if (code == ERR_NOSUCHNICK) {
+		message += paramString + " :No such nick/channel";
+	} else if (code == ERR_CANNOTSENDTOCHAN) {
+		message += paramString + " :Cannot send to channel";
 	} else if (code == ERR_ERRONEUSNICKNAME) {
 		message += paramString + " :Erroneous nickname";
 	} else if (code == ERR_UNKNOWNCOMMAND) {
@@ -53,9 +57,10 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
 		message += "Unknown MODE flag";
 	} else if (code == RPL_WHOISUSER) {
-		message += "You are known as " + client.getNickname();
+		message += client.getNickname() + " " + client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
 	} else if (code == RPL_PONG) {
 		message = ":" + this->serverName_ + " PONG "+ this->serverName_;
+		logMessage(DEBUG, "PONG", "PONG response to ping. Client FD: " + std::to_string(client.getClientFD()));
 	} else if (code == ERR_ERRONEUSUSER) {
 		message += paramString + " :Erroneous format";
 	//last
@@ -90,12 +95,41 @@ void Server::messageHandle(Client &client, std::string cmd, const std::vector<st
 	}
 }
 
-// for channel msg
+void Server::messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend) {
+	// check conditions
+	std::string finalMsg = fromClient.getClientIdentifier() + " " + command + " " + targetClient.getNickname() + " " + msgToSend + "\r\n";
+	targetClient.appendSendBuffer(finalMsg);
+}
 
-// void Server::messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params) {
-// 	if (!code)
-// 		return ;
-// 	std::string message = createMessage(code, client, cmd, params);
-// 	client.appendSendBuffer(message);
-// }
+void Server::messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend, std::string channelName) {
+	// check conditions
+	std::string finalMsg = fromClient.getClientIdentifier() + " " + command + " " + channelName + " " + msgToSend + "\r\n";
+	targetClient.appendSendBuffer(finalMsg);
+}
 
+
+void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend) {
+	// check conditions
+	if (!isClientChannelMember(&targetChannel, fromClient)) {
+		messageHandle(ERR_NOTONCHANNEL, fromClient, command, {msgToSend});
+		logMessage(ERROR, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getChannelName());
+		return ;
+	}
+
+	const std::set<Client*>& clients = targetChannel.getMembers();
+
+	for (Client* targetClient : clients) {
+		if (command == "PRIVMSG") {
+			if (targetClient->getClientFD() != fromClient.getClientFD()) {
+				if (isClientChannelMember(&targetChannel, *targetClient)) {
+					messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getChannelName());
+				}
+			}
+		}
+		else {
+			if (isClientChannelMember(&targetChannel, *targetClient)) {
+				messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getChannelName());
+			}
+		}
+	}
+}
