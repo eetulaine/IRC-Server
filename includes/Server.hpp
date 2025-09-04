@@ -82,7 +82,7 @@ class Server {
 
 
 		// CLIENT
-		Client* getClient(const std::string& nickName);
+		Client* 	getClient(const std::string& nickName);
 
 
 		// CHANNEL
@@ -127,8 +127,9 @@ class Server {
 		void		messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
 		void		messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
-
-
+		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend);
+		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend, std::string channelName);
+		void		messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend);
 
 
 };
