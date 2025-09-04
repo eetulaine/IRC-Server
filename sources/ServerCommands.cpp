@@ -86,7 +86,6 @@ std::vector<std::string> split(const std::string& input, const char delmiter) {
     return tokens;
 }
 
-
 void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
 	if (params.empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "JOIN", params);
@@ -129,6 +128,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		}
 		channel->addChannelMember(&client);
 		client.addToJoinedChannelList(channel->getChannelName());
+		messageBroadcast(*channel, client, "JOIN", ""); // need to set it if  above mehtods have no error
 	}
 }
 
@@ -179,7 +179,7 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 		std::string oldNick = client.getNickname();
 		std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
 		client.setNickname(params[0]);
-		//messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+		messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
 		logMessage(INFO, "NICK", "Nickname changed to " + client.getNickname() + ". Old Nickname: " + oldNick);
 		client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
 	}
@@ -276,7 +276,6 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 						client.getUsername() + "@" +
 						client.getHostname() + quitMessage + "\r\n";
 	client.appendSendBuffer(quitMessage);
-	client.sendData();
 	closeClient(client);
 }
 
@@ -343,16 +342,17 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 		return; //comment this out if user can self-kick
 	}
 	if (clientToKick == nullptr) {
-		messageHandle(ERR_USERNOTINCHANNEL, client, "KICK", params);
+		messageHandle(ERR_USERNOTINCHANNEL, client, "KICK", params); // NOSUCHNICK?
 		logMessage(ERROR, "KICK", "User " + userToKick + " not found on channel " + channel);
 		return;
 	}
-	std::string kickMessage = ":" + client.getNickname() + "!" + client.getUsername() +
-							"@" + client.getHostname() + " KICK " + channel + " " +
-							userToKick + " :" + kickReason;
-	for (Client* member : members) {
-		member->appendSendBuffer(kickMessage);
-	}
+	// std::string kickMessage = ":" + client.getNickname() + "!" + client.getUsername() +
+	// 						"@" + client.getHostname() + " KICK " + channel + " " +
+	// 						userToKick + " :" + kickReason;
+	// for (Client* member : members) {
+	// 	member->appendSendBuffer(kickMessage);
+	// }
+	messageBroadcast(*targetChannel, client, "KICK", clientToKick->getNickname() + " :" + kickReason);
 	targetChannel->removeMember(clientToKick);
 	logMessage(INFO, "KICK", "User " + userToKick + " kicked from " + channel + " by " + client.getNickname() + " (reason: " + kickReason + ")");
 }
@@ -393,18 +393,18 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 
 	bool isChannel = false;
 	std::string target = params[0];
-	Client *clientTo;
-		Channel *channelTo;
+	Client *targetClient;
+	Channel *targetChannel;
 	if (target[0] == '#') {
 		isChannel = true;
 		//sendTo.erase(0,1);
-		channelTo = getChannelShahnaj(target); // check the method
-		if (channelTo == nullptr) {
+		targetChannel = getChannelShahnaj(target); // check the method
+		if (targetChannel == nullptr) {
 			//messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
 			logMessage(ERROR, "PRIVMSG", "Channel: \"" + target + "\" does not exist");
 			return ;
 		}
-		else if (!isClientChannelMember(channelTo, client)) {
+		else if (!isClientChannelMember(targetChannel, client)) {
 			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
 			logMessage(ERROR, "PRIVMSG", "Client is not a member of channel: \"" + target + "\"");
 			return ;
@@ -412,8 +412,8 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 		logMessage(DEBUG, "PRIVMSG", "End of channel");
 	}
 	else {
-		clientTo = getClient(target);
-		if (clientTo == nullptr || (clientTo && !clientTo->isAuthenticated())) {
+		targetClient = getClient(target);
+		if (targetClient == nullptr || (targetClient && !targetClient->isAuthenticated())) {
 			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", params);
 			logMessage(ERROR, "PRIVMSG", "No such nickname: \"" + target + "\"");
 			return ;
@@ -428,19 +428,17 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 		msgToSend = params[1];
 	logMessage(DEBUG, "PRIVMSG", "MSG: " + msgToSend);
 	if (isChannel) {
-		logMessage(DEBUG, "PRIVMSG", "Msg to client goes here");
+		logMessage(DEBUG, "PRIVMSG", "Sending Channel Msg");
+		messageBroadcast(*targetChannel, client, "PRIVMSG", msgToSend);
 	}
 	else {
 		logMessage(DEBUG, "PRIVMSG", "Sending msg to client");
-		//clientTo->appendSendBuffer(msgToSend + "\r\n");
-		std::string finalMsg = client.getClientIdentifier() + " PRIVMSG " + clientTo->getNickname() + " " + msgToSend + "\r\n";
-		//messageHandle(5, clientTo, "PRIVMSG", finalMsg);
-		logMessage(DEBUG, "PRIVMSG", "FULL MSG: " + finalMsg);
-		//send(clientTo->getClientFD(), finalMsg.c_str(), finalMsg.size(), 0);
-		clientTo->appendSendBuffer(finalMsg);
+		logMessage(DEBUG, "PRIVMSG", "MSG: " + msgToSend);
+		messageToClient(*targetClient, client, "PRIVMSG", msgToSend);
+	//	std::string finalMsg = client.getClientIdentifier() + " PRIVMSG " + targetClient->getNickname() + " " + msgToSend + "\r\n";
+
 	}
 }
-
 
 int Server::handleInviteParams(Client& client, const std::vector<std::string>& params) {
 	if (params.empty()) {
@@ -568,6 +566,7 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 		}
 	}
 	targetChannel->setTopic(params[1]);
+	messageBroadcast(*targetChannel, client, "TOPIC", params[1]);
 	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
 }
 
@@ -583,23 +582,3 @@ void Server::handleWhois(Client& client, const std::vector<std::string>& params)
 	}
 	messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
 }
-
-
-	// if (cmd.arguments.empty()) {
-	// 	return (ERR_NONICKNAMEGIVEN);
-	// }
-	// parsedArgs	whoArgs = parseArgs(cmd.arguments, 1, false);
-	// string		target = whoArgs.args[0];
-
-	// if (targetIsUser(target[0])) {
-	// 	User *targetUser = findUserByNickName(target);
-
-	// 	if (targetUser == nullptr) {
-	// 		return (ERR_NOSUCHNICK);
-	// 	} else {
-	// 		cmd.arguments = targetUser->getNickname() + " " + targetUser->getUsername() + " " + targetUser->getHostname() + " * :" + targetUser->getRealname();
-	// 		sendMessage(RPL_WHOISUSER, cmd, user);
-	// 		return (0);
-	// 	}
-	// }
-	// return (0);
