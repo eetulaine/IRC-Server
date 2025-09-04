@@ -21,6 +21,7 @@ connect:
 irssi -c localhost -p 6667 -w qwerty
 
 
+
 /connect liberachat
  /rawlog log.log
  /rawlog OPEN log.log
@@ -76,3 +77,4 @@ WHOIS: Client ID: 8
 [04.09.2025 16:45:51] [INFO] [CLIENT] Client destroyed. ClientFD[6]
 [04.09.2025 16:45:51] [INFO] [CLIENT] Client destroyed. ClientFD[5]
 [04.09.2025 16:45:51] [ERROR][MAIN] epoll_ctl() failed for client data receive/send Bad file descriptor
+

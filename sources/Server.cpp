@@ -2,7 +2,7 @@
 #include "../includes/Client.hpp"
 #include "../includes/responseCodes.hpp"
 
-bool isRunning_ = true; // change the value to true when it start
+volatile sig_atomic_t Server::isRunning_ = true; // change the value to true when it start
 
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
@@ -18,6 +18,7 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	//  std::cout << "Sock: " << serverSocket_ << "\n\n";
 
 	logMessage(INFO, "SERVER", "Server created. PORT[" + std::to_string(port_) + "] PASSWORD[" + password_ + "]");
+	customSignals(true);
 	registerCommands();
 }
 
@@ -28,13 +29,14 @@ Server::~Server() {
 		freeaddrinfo(res_);
 }
 
-void Server::closeServer() {
-	if (serverSocket_ >= 0) {
+void Server::closeServer(int epollFD) {
+	logMessage(INFO, "SERVER", "Server closing [closeServer()]");
+	if (epollFD)
+		close(epollFD);
+	if (serverSocket_ >= 0)
 		close(serverSocket_);
-	}
 	password_.clear();
-	signal(SIGINT, SIG_DFL);
-	signal(SIGTSTP, SIG_DFL);
+	customSignals(false);
 	isRunning_ = false;
 	exit(0);
 }
@@ -69,6 +71,26 @@ void Server::setNonBlocking() {
 		throw std::runtime_error("fcntl failed to set non-blocking");
 }
 
+void Server::customSignals(bool customSignals) {
+	if (customSignals) {
+		signal(SIGINT, stop); // ctrl+c
+		signal(SIGTERM, stop); // kill command shutdown
+		signal(SIGTSTP, stop); // ctrl+z
+		signal(SIGPIPE, SIG_IGN); // prevent crashes from broken pipes
+	}
+	else {
+		signal(SIGINT, SIG_DFL);
+		signal(SIGTERM, SIG_DFL);
+		signal(SIGTSTP, SIG_DFL);
+		signal(SIGPIPE, SIG_DFL);
+	}
+}
+
+void Server::stop(int signum) {
+	if (signum == SIGINT || signum == SIGTSTP || signum == SIGTERM)
+		isRunning_ = false;
+}
+
 void Server::startServer()
 {
 	logMessage(INFO, "SERVER", "Server started. SOCKET[" + std::to_string(serverSocket_) + "]");
@@ -89,11 +111,11 @@ void Server::startServer()
 
 	logMessage(INFO, "SERVER", "Waiting for events. ServerFD[" + std::to_string(epollFd) + "]");
 
-	while(isRunning_) {
+	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
-		// handle SIGINT;
-
+		if (!isRunning_)
+			closeServer(epollFd);
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
