@@ -46,12 +46,35 @@ TOPIC:
 
 
 
-ERROR:
-1. after kick unable to join the channel
-2. some weird scenarios: in double connect, join, kick combination. need to create it again
+
 
 ERROR:
+1. after kick unable to join the channel. it says already a member. then when try to send msg it says "Client is not a member of channel: "#abc"
+2. some weird scenarios: in double connect, join, kick combination. need to create it again
+
+ERROR LOG :
+
+/////////////////////////////
+[04.09.2025 17:23:32] [DEBUG][COMMAND] C[KICK], P[0][#abc]
+Member <shachowd> is removed from#abcchannel
+[04.09.2025 17:23:32] [INFO] [KICK] User shachowd kicked from #abc by Nickname1is (reason: bad guy)
+[04.09.2025 17:23:48] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
+[04.09.2025 17:23:48] [WARNING] [CLIENT#abc] Client '~shachowd' is already a member
+[04.09.2025 17:24:12] [DEBUG][COMMAND] C[PRIVMSG], P[0][#abc]
+- #abc
 - hi
+[04.09.2025 17:24:12] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
+[04.09.2025 17:24:45] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
+[04.09.2025 17:24:45] [WARNING] [CLIENT#abc] Client '~shachowd' is already a member
+[04.09.2025 17:24:51] [DEBUG][COMMAND] C[PRIVMSG], P[0][#abc]
+- #abc
+- hi
+[04.09.2025 17:24:51] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
+[04.09.2025 17:25:58] [DEBUG][COMMAND] C[KICK], P[0][#abc]
+[04.09.2025 17:25:58] [ERROR][KICK] User shachowd not found on channel #abc
+
+
+///////////////////////////////////////////
 [04.09.2025 16:43:02] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
 [04.09.2025 16:43:25] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
 [04.09.2025 16:43:25] [WARNING] [CLIENT#abc] Client '~shachowd' is already a member
@@ -67,7 +90,7 @@ ERROR:
 [04.09.2025 16:43:53] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
 
 
-................................................................................
+////////////////////////////////
 WHOIS: Client ID: 8
 - shachowd
 [04.09.2025 16:45:51] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
@@ -77,4 +100,5 @@ WHOIS: Client ID: 8
 [04.09.2025 16:45:51] [INFO] [CLIENT] Client destroyed. ClientFD[6]
 [04.09.2025 16:45:51] [INFO] [CLIENT] Client destroyed. ClientFD[5]
 [04.09.2025 16:45:51] [ERROR][MAIN] epoll_ctl() failed for client data receive/send Bad file descriptor
+
 
