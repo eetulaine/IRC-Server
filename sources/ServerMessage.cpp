@@ -107,7 +107,6 @@ void Server::messageToClient(Client &targetClient, Client &fromClient, std::stri
 	targetClient.appendSendBuffer(finalMsg);
 }
 
-
 void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend) {
 	// check conditions
 	if (!isClientChannelMember(&targetChannel, fromClient)) {
