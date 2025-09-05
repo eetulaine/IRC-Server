@@ -93,6 +93,7 @@ class Server {
 		bool 		channelExists(const std::string& channelName);
 		Channel*	getChannel(const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
+		void		leaveAllChannels(Client& client);
 
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
 
@@ -133,6 +134,7 @@ class Server {
 		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend);
 		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend, std::string channelName);
 		void		messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend);
+		
 
 
 };
