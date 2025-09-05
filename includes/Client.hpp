@@ -72,5 +72,6 @@ class Client {
 		//------ CHANNEL -------
 		void addToJoinedChannelList(const std::string &channelName);
 		bool isInChannel(const std::string& channelName);
-		//void leaveChannel(const std::string &channelName);
+		void leaveChannel(const std::string &channelName);
+		const std::set<std::string> &getJoinedChannels() const;
 };
