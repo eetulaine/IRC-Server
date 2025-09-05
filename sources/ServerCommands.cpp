@@ -263,19 +263,20 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-	logMessage(DEBUG, "QUIT", "Password mismatch. Given Password: " + params[0]);
-    if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
-		closeClient(client);
-		return;
-	}
-	std::string quitMessage = "Client quit";
+    if (!client.isConnected() || !client.isAuthenticated()) //no broadcasting from unconnected or unregistered clients
+		return closeClient(client);
+	std::string reason = "Client quit";
 	if (!params.empty())
-		quitMessage = " QUIT :" + params[0];
-	quitMessage = ":" + client.getNickname() + "!" +
-						client.getUsername() + "@" +
-						client.getHostname() + quitMessage + "\r\n";
+		reason = params[0];
 	// BROADCAST the quitMessage to all the channels the client quitting is a member of
-	client.appendSendBuffer(quitMessage);
+	 for (const std::string& channelName : client.getJoinedChannels()) {
+        Channel* channel = getChannel(channelName);
+        if (channel) {
+            messageBroadcast(*channel, client, "QUIT", " :" + reason);
+        }
+    }
+	//client.appendSendBuffer(quitMessage);
+	logMessage(INFO, "QUIT", "User " + client.getNickname() + " quit (reason: " + reason + ")");
 	closeClient(client);
 }
 
@@ -358,22 +359,19 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 	if (it == channelMap_.end()) {
 		// MESSAGE client that the channel does not exist
 		messageHandle(ERR_NOSUCHCHANNEL, client, channel, params);
-		logMessage(ERROR, "KICK", "Channel " + channel + " does not exist");
-		return;
+		return logMessage(ERROR, "KICK", "Channel " + channel + " does not exist");
 	}
 	Channel* targetChannel = it->second;
 	const std::set<Client*>& members = targetChannel->getMembers();
 	if (members.find(&client) == members.end()) {
 		// MESSAGE client that they are not on the channel themselves
 		messageHandle(ERR_NOTONCHANNEL, client, channel, params);
-		logMessage(ERROR, "KICK", "User " + client.getNickname() + " not on channel " + channel);
-		return;
+		return logMessage(ERROR, "KICK", "User " + client.getNickname() + " not on channel " + channel);
 	}
 	if (!targetChannel->isOperator(&client)) { // check whether the user has operator rights on the channel
 		// MESSAGE client they don't have the operator rights to kick another user
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, params);
-		logMessage(ERROR, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
-		return;
+		return logMessage(ERROR, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
 	}
 	Client* clientToKick = nullptr;
 	for (Client* member : members) {
@@ -384,15 +382,12 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 	}
 	if (clientToKick == &client) { // do we want the user to be able to kick themselves out of the channel????
 		// MESSAGE client they can't kick themselves off the channel
-		logMessage(WARNING, "KICK", "User " + client.getNickname() + " attempted to kick themselves out of channel " + channel);
-		return; //comment this out if user can self-kick
+		return logMessage(WARNING, "KICK", "User " + client.getNickname() + " attempted to kick themselves out of channel " + channel);
 	}
 	if (clientToKick == nullptr) {
-
 		// MESSAGE client the user they tried to kick is not on the channel
 		messageHandle(ERR_USERNOTINCHANNEL, client, "KICK", params);
-		logMessage(ERROR, "KICK", "User " + userToKick + " not found on channel " + channel);
-		return;
+		return logMessage(ERROR, "KICK", "User " + userToKick + " not found on channel " + channel);
 	}
     // std::string kickMessage = ":" + client.getNickname() + "!" + client.getUsername() +
     // 						"@" + client.getHostname() + " KICK " + channel + " " +
@@ -402,8 +397,10 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
     // }
 
 	// BROADCAST to all the channel members that a user is kicked from the channel
-  messageBroadcast(*targetChannel, client, "KICK", clientToKick->getNickname() + " :" + kickReason);
+	
+	messageBroadcast(*targetChannel, client, "KICK", clientToKick->getNickname() + " :" + kickReason);
 	targetChannel->removeMember(clientToKick);
+	clientToKick->leaveChannel(channel);
 	logMessage(INFO, "KICK", "User " + userToKick + " kicked from " + channel + " by " + client.getNickname() + " (reason: " + kickReason + ")");
 }
 
@@ -411,8 +408,8 @@ void Server::closeClient(Client& client) {
 
 	int clientfd = client.getClientFD();
 	int epollfd = client.getEpollFd();
+	leaveAllChannels(client); // remove client from Channel member lists and clear joinedChannels
 	client.setConnected(false);
-
 	struct epoll_event ev;
     ev.events = EPOLLIN;
     ev.data.fd = clientfd;
@@ -514,25 +511,20 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		return;
 	std::string userToBeInvited = params[0];
 	std::string channelInvitedTo = params[1];
-	auto it = channelMap_.find(channelInvitedTo);
-	if (it == channelMap_.end()) {
+	if (!channelExists(channelInvitedTo)) {
 		// MESSAGE client the channel they wanted to invite to doesn't exist
-		logMessage(WARNING, "INVITE", "Channel " + channelInvitedTo + " does not exist");
-		return;
+		return logMessage(WARNING, "INVITE", "Channel " + channelInvitedTo + " does not exist");
 	}
-	Channel* targetChannel = it->second;
-	const std::set<Client*>& members = targetChannel->getMembers();
-	if (members.find(&client) == members.end()) {
+	Channel* targetChannel = getChannel(channelInvitedTo);
+	if (!targetChannel->isMember(&client)) {
 		// MESSAGE client they are not joined to the channel themselves
 		messageHandle(ERR_NOTONCHANNEL, client, "INVITE", params);
-		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " not on channel " + channelInvitedTo);
-		return;
+		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " not on channel " + channelInvitedTo);
 	}
 	if (targetChannel->isInviteOnly() && !targetChannel->isOperator(&client)) {
 		// MESSAGE client they don't have operator rights for invite-only channel
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, "INVITE", params);
-		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " does not have operator rights for invite-only channel " + channelInvitedTo);
-		return;
+		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " does not have operator rights for invite-only channel " + channelInvitedTo);
 	}
 	Client* clientToBeInvited = nullptr;
 	for (auto& pair : clients_) {
@@ -544,25 +536,23 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 	if (clientToBeInvited == nullptr) {
 		// MESSAGE client that the user they wanted to invite doesn't exist
 		messageHandle(ERR_NOSUCHNICK, client, "INVITE", params);
-		logMessage(ERROR, "INVITE", "User " + userToBeInvited + " does not exist");
-		return;
+		return logMessage(ERROR, "INVITE", "User " + userToBeInvited + " does not exist");
 	}
 	if (clientToBeInvited == &client) { // user can't invite themselves
 		// MESSAGE client that they can't invite themselves
-		logMessage(WARNING, "INVITE", "User " + client.getNickname() + " attempted to invite themselves to channel " + channelInvitedTo);
-		return;
+		return logMessage(WARNING, "INVITE", "User " + client.getNickname() + " attempted to invite themselves to channel " + channelInvitedTo);
 	}
-	if (members.find(clientToBeInvited) != members.end()) { // user to be invited already a member of the channel
+	if (targetChannel->isMember(clientToBeInvited)) { // user to be invited already a member of the channel
 		// MESSAGE client that the user invited is already on the channel
 		messageHandle(ERR_USERONCHANNEL, *clientToBeInvited, "INVITE", params);
-		logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
-		return;
+		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
 	}
 	// MESSAGE/BROADCAST? clientToBeInvited & client: User client inviting userToBeInvited to channelInvitedTo
+	
 	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
-	std::string confirmMessage = ":" + getServerName() + " 341 " +
+	/* std::string confirmMessage = ":" + getServerName() + " 341 " +
                                 client.getNickname() + " " + userToBeInvited + " " + channelInvitedTo;
-    client.appendSendBuffer(confirmMessage);
+    client.appendSendBuffer(confirmMessage); */
     logMessage(INFO, "INVITE", "User " + client.getNickname() + " inviting " + userToBeInvited + " to " + channelInvitedTo);
 }
 
@@ -584,44 +574,37 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 	if (params[1].empty()) {
 		topicGiven = false;
 	}
-	auto it = channelMap_.find(channel); // confirm the channel exists
-	if (it == channelMap_.end()) {
+	if (!channelExists(channel)) {
 		// MESSAGE client the channel is invalid
-		logMessage(WARNING, "TOPIC", "Channel " + channel + " does not exist");
-		return;
+		return logMessage(WARNING, "TOPIC", "Channel " + channel + " does not exist");
 	}
-	Channel* targetChannel = it->second;
+	Channel* targetChannel = getChannel(channel);
 	logMessage(DEBUG, "TOPIC", "CURRENT TOPIC: " + targetChannel->getTopic());
 	if (!topicGiven && targetChannel->getTopic().empty()) { // if topic not given and channel topic has not been set, print "no topic"
 		// MESSAGE client that there's no topic set for the Channel yet
 		messageHandle(RPL_NOTOPIC, client, "TOPIC", params);
-		logMessage(WARNING, "TOPIC", "No topic set for channel " + channel);
-		return;
+		return logMessage(WARNING, "TOPIC", "No topic set for channel " + channel);
 	}
 	else if (!topicGiven) { // if topic not given as argument and topic is already set for channel, print the topic
 		// MESSAGE client the topic already set for the Channel
 		messageHandle(RPL_TOPIC, client, "TOPIC", params);
-		logMessage(DEBUG, "TOPIC", targetChannel->getTopic());
-		return;
+		return logMessage(DEBUG, "TOPIC", targetChannel->getTopic());
 	}
 	const std::set<Client*>& members = targetChannel->getMembers();
 	if (members.find(&client) == members.end()) { // if user wanting to set the topic has not joined the channel they can't set the topic
 		// MESSAGE client that they are not on the channel and thus cannot change topic
 		messageHandle(ERR_NOTONCHANNEL, client, "TOPIC", params);
-		logMessage(ERROR, "TOPIC", "User " + client.getNickname() + " not on channel " + channel);
-		return;
+		return logMessage(ERROR, "TOPIC", "User " + client.getNickname() + " not on channel " + channel);
 	}
 	if (topicGiven && !targetChannel->isTopicOperatorOnly()) { // if topic is given and the mode +t has not been set we can set the topic
 		targetChannel->setTopic(params[1]);
 		// BROADCAST to every channel member that user has set a new Channel topic
-		logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
-		return;
+		return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
 	}
 	else if (topicGiven && targetChannel->isTopicOperatorOnly()) { // if topic can be set by operators only (mode +t), either set the topic if user is operator or print error
 		if (!targetChannel->isOperator(&client)) {
 			// MESSAGE client: unable to set topic without operator rights
-			logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
-			return;
+			return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
 		}
 	}
 	// BROADCAST to every channel member that the Channel topic has been set

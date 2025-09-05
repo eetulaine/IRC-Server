@@ -90,6 +90,11 @@ bool Client::isInChannel(const std::string& channelName) {
 	return joinedChannels_.find(channelName) != joinedChannels_.end();
 }
 
+void Client::leaveChannel(const std::string &channelName) {
+	if (isInChannel(channelName))
+		joinedChannels_.erase(channelName);
+}
+
 bool Client::isConnected() const {
 	if (!connected_) {
 		return false;
@@ -179,6 +184,10 @@ std::string Client::getClientIdentifier() const {
 
 bool Client::getIsPassValid() const {
 	return isPassValid_;
+}
+
+const std::set<std::string>& Client::getJoinedChannels() const {
+	return joinedChannels_;
 }
 
 void Client::setHostname(std::string hostname) {

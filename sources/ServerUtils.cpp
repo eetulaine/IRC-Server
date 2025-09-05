@@ -23,6 +23,18 @@ Channel* Server::createChannel(Client* client, const std::string& channelName, c
     return newChannel;
 }
 
+// removes Client from all the Channels joined (both members within Channel and joinedChannels within Client)
+void Server::leaveAllChannels(Client& client) {
+	std::set<std::string> channelsToLeave = client.getJoinedChannels(); // copy the set first so we can safely modify it (leaveChannel())
+	for (const std::string& channelName : channelsToLeave) {
+		Channel* channel = getChannel(channelName);
+		if (channel) {
+			channel->removeMember(&client);
+			client.leaveChannel(channelName);
+		}
+	}
+}
+
 bool Server::channelExists(const std::string& channelName) {
 
 	return (channelMap_.find(channelName) != channelMap_.end());

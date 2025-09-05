@@ -29,13 +29,21 @@ void Channel::addChannelMember(Client *client) {
 		": Client " +  client->getNickname() + " Joined");
 }
 
+bool Channel::isMember(Client* client) {
+	auto it = members_.find(client);
+	if (it == members_.end()) {
+		return false;
+	}
+	return true;
+}
+
 void Channel::removeMember(Client *client) {
 
  	size_t status =  members_.erase(client);
  	if (status)
- 		std::cout << "Member <" << client->getNickname() << "> is removed from" << name_ << "channel\n";
+		logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> is removed from channel " + this->getChannelName());
  	else
- 		std::cout << "Menber <" << client->getNickname() << "> was not found in channel\n";
+		logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> not found on channel " + this->getChannelName());
  }
 
  void Channel::addInvite(Client *client) {
