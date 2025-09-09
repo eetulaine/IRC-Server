@@ -27,7 +27,7 @@ class Channel {
 
 		
 		//METHODS
-		// bool isMember(Client* client);
+		bool isMember(Client* client);
 		void addChannelMember(Client *client);
 		void addInvite(Client* client);
 		void removeMember(Client *client);

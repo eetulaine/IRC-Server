@@ -54,20 +54,6 @@ void Server::registerCommands() {
 	};
 }
 
-// void Server::printChannelMap() {
-//     // Iterate through the map and print each channel's name and details
-//     for (const auto& entry : channelMap_) {
-//         const std::string& channelName = entry.first;  // Channel name
-//         Channel* channel = entry.second;               // Channel object (pointer)
-
-//         // Print the channel name
-//         std::cout << "Channel Name: " << channelName << std::endl;
-
-//         // Access specific properties of the channel
-//         std::cout << "  Channel Key: " << channel->getChannelKey() << std::endl;
-//         std::cout << "  Requires Password: " << (channel->isKeyProtected() ? "Yes" : "No") << std::endl;
-//     }
-// }
 
 std::vector<std::string> split(const std::string& input, const char delmiter) {
 
@@ -268,66 +254,104 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
 
-	// if (params.empty()) {
-	// 	//messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-	// 	logMessage(ERROR, "MODE", "No channel or user specified");
-	// 	return ;
-	// }
-	// if (params[0].empty()) {
-	// 	//messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-	// 	logMessage(ERROR, "MODE", "No channel specified");
-	// 	return ;
-	// }
-	// if (params[1].empty()) {
-	// 	//messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-	// 	logMessage(ERROR, "MODE", "No mode specified");
-	// 	return ;
-	// }
-	std::string channel = params[0];
-	std::string mode = params[1];
-
-	if (Channel::isValidChannelName(channel)) {
-		if (!channelExists(channel)) {
-			logMessage(ERROR, "MODE", "channel <" + channel + "> not found");
-			return ;
-		}
-		else {
-			if (mode[0] == '+')  {
-				Channel* targetChannel = getChannel(channel);
-				if (!targetChannel) 
-					return;
-				else {
-					// targetChannel->setInviteOnly(false);
-					if (targetChannel->isInviteOnly()) {
-						targetChannel->setInviteOnly(true);
-						std::cout << "MODE LETTER:  " << mode <<"\n";
-						std::cout << "CHANNEL:  #" << targetChannel <<"\n";
-						logMessage(DEBUG, "MODE", "CHANNEL IS SET TO INVITE ONLY");
-					}
-					else
-						logMessage(WARNING, "MODE", "CHANNEL IS ALREADY SET TO INVITE ONLY");
-						
-				}
-				
-			}
-			else if (mode[0] == '+') {
-				// remove invite-only mode	
-			}
-		}
+	if (params.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+        return;
 	}
+
+	std::string targetChannel = params[0];
+	if (targetChannel[0] == '#' || targetChannel[0] == '&')
+		handleChannelMode(client, params);
 	else
-	{
-		std::string msg = ":" + serverName_ + " 221 " + client.getNickname() + " +i" + "\r\n";
-		client.appendSendBuffer(msg);
-		logMessage(DEBUG, "MODE", "invalid channel name. ClientFD: " + std::to_string(client.getClientFD()));
+		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+}
+
+void Server::handleChannelMode(Client& client, const std::vector<std::string>& params) {
+
+	std::string channelName = params[0];
+	Channel *channel = getChannel(channelName);
+	if (!channel) {
+		messageHandle(ERR_NOSUCHCHANNEL, client, "MODE", params);
+		return;
 	}
-	return ;
-	
+	if (!channel->isMember(&client)) {
+		messageHandle(ERR_NOTONCHANNEL, client, "MODE", params);
+		return;
+	}
+	std::string modeString = params[1];
+	if (modeString.size() < 2 || (modeString[0] != '+' && modeString[0] != '-')) {
+		messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+		return;
+	}
 
-	
+	char operation = modeString[0];
+	char modeChar = modeString[1];
+	std::string modeParam = (params.size() > 2) ? params[2] : "";
 
-	
+	switch (modeChar) {
+		case 'i':
+			inviteOnlyMode(client, *channel, operation);
+			break;
+		case 't':
+			//TopicRestrictionMode(client, *channel, operation);
+			//break;
+		case 'k':
+			channelKeyMode(client, *channel, operation, modeParam);
+			break;
+		case 'o':
+			//OperatorMode(client, *channel, operation, modeParam);
+			//break
+		case 'l':
+			// userLimitMode(client, *channel, operation, modeParam);
+			//break;
+		default:
+			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+			break;
+	}
+}
 
+void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
+
+	if (!channel.isOperator(&client)) {
+		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
+		return;
+	}
+	if (operation == '+') {
+		if (!channel.isInviteOnly()) {
+			channel.setInviteOnly(true);
+			logMessage(DEBUG, "MODE", "Channel is set to invite only");
+			//broadcast();
+	} else
+		logMessage(WARNING, "MODE", "Channel is already set to invite only");
+	} else {
+		if (channel.isInviteOnly()) {
+			channel.setInviteOnly(false);
+			logMessage(DEBUG, "MODE", "Channel invite-only mode removed");
+			//broadcast();
+		} else 
+		logMessage(WARNING, "MODE", "channel is not invite-only mode");
+	}
+}
+
+void Server::channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key) {
+	
+	if (!channel.isOperator(&client)) {
+		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
+		return;
+	}
+	if (operation == '+') {
+		if (key.empty())
+			// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
+			return;
+		channel.setChannelKey(key);
+		logMessage(INFO, "MODE", "Channel key set to: " + key + " for channel: " + channel.getChannelName());
+		//broadcast();
+	}
+	else {
+		channel.setChannelKey("");
+		logMessage(INFO, "MODE", "Channel key removed from channel: " + channel.getChannelName());
+		//broadcast();
+	}
 }
 
 int Server::handleKickParams(Client& client, const std::vector<std::string>& params) {

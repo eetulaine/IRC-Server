@@ -22,7 +22,16 @@ Channel::~Channel() {
 }
 
 
+
 //PUBLIC METHODS
+bool Channel::isMember(Client* client) {
+	auto it = members_.find(client);
+	if (it == members_.end()) {
+		return false;
+	}
+	return true;
+}
+
 void Channel::addChannelMember(Client *client) {
 	
 	members_.insert(client);
