@@ -167,10 +167,15 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 	{
 		std::string oldNick = client.getNickname();
 		std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
+		//client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
 		client.setNickname(params[0]);
-		messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
-		logMessage(INFO, "NICK", "Nickname changed to " + client.getNickname() + ". Old Nickname: " + oldNick);
+		//messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
 		client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
+	//	messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+		messageBroadcast(client, "NICK", replyMsg);
+		logMessage(INFO, "NICK", "Nickname changed to " + client.getNickname() + ". Old Nickname: " + oldNick);
+
+
 	}
 	else if (!client.getIsPassValid()) {
 		messageHandle(ERR_ALREADYREGISTERED, client, "NICK", params);
@@ -331,6 +336,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 
 	if (!channel.isOperator(&client)) {
 		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
+		logMessage(ERROR, "MODE", "Client is not operator");
 		return;
 	}
 	if (operation == '+') {
@@ -345,13 +351,13 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 			channel.setInviteOnly(false);
 			logMessage(DEBUG, "MODE", "Channel invite-only mode removed");
 			//broadcast();
-		} else 
+		} else
 		logMessage(WARNING, "MODE", "channel is not invite-only mode");
 	}
 }
 
 void Server::channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key) {
-	
+
 	if (!channel.isOperator(&client)) {
 		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
 		return;
@@ -439,7 +445,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
     // }
 
 	// BROADCAST to all the channel members that a user is kicked from the channel
-	
+
 	messageBroadcast(*targetChannel, client, "KICK", clientToKick->getNickname() + " :" + kickReason);
 	targetChannel->removeMember(clientToKick);
 	clientToKick->leaveChannel(channel);
@@ -590,7 +596,7 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
 	}
 	// MESSAGE/BROADCAST? clientToBeInvited & client: User client inviting userToBeInvited to channelInvitedTo
-	
+
 	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
 	/* std::string confirmMessage = ":" + getServerName() + " 341 " +
                                 client.getNickname() + " " + userToBeInvited + " " + channelInvitedTo;
