@@ -117,7 +117,7 @@ class Server {
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
 		void		inviteOnlyMode(Client& client, Channel& channel, char operation);
 		void 		channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key);
-  
+
 		void		handleTopic(Client& client, const std::vector<std::string>& params);
 		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
 		void		handleWhois(Client& client, const std::vector<std::string>& params);
@@ -137,10 +137,7 @@ class Server {
 		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend);
 		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend, std::string channelName);
 		void		messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend);
-		
-
-
-
+		void		messageBroadcast(Client &fromClient, std::string command, const std::string msgToSend);
 };
 
 void	logMessage(logMsgType type, const std::string &action, const std::string &msg);
