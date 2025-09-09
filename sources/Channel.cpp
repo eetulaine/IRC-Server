@@ -5,7 +5,12 @@
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false), inviteOnly_(true), topicOperatorOnly_(true), topic_("") {
+	: 	name_(name),
+		key_(""),
+		topic_(""), 
+		keyProtected_(false),
+		topicOperatorOnly_(true),
+		inviteOnly_(false) {
 
 	if(!key.empty())
 		setChannelKey(key);
@@ -35,14 +40,6 @@ void Channel::addChannelMember(Client *client) {
 	members_.insert(client);
 	logMessage(INFO, "CHANNEL", this->getChannelName() + 
 		": Client " +  client->getNickname() + " Joined");
-}
-
-bool Channel::isMember(Client* client) {
-	auto it = members_.find(client);
-	if (it == members_.end()) {
-		return false;
-	}
-	return true;
 }
 
 void Channel::removeMember(Client *client) {

@@ -108,7 +108,7 @@ class Server {
 		void		handlePing(Client& client, const std::vector<std::string>& params);
 		void		handleQuit(Client& client, const std::vector<std::string>& params);
 		void		handleMode(Client& client, const std::vector<std::string>& params);
-		void		handleChannelMode(Client& client, const std::vector<std::string>& params);
+		void 		handleChannelMode(Client& client, Channel* channel, const std::vector<std::string>& params);
 		void		handleKick(Client& client, const std::vector<std::string>& params);
 		void		handleJoin(Client& client, const std::vector<std::string>& params);
 		int			handleKickParams(Client& client, const std::vector<std::string>& params);
@@ -116,6 +116,7 @@ class Server {
 		void		handleInvite(Client& client, const std::vector<std::string>& params);
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
 		void		inviteOnlyMode(Client& client, Channel& channel, char operation);
+		void 		userLimitMode(Client& client, Channel& channel, char operation, const std::string& limit);
 		void 		channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key);
   
 		void		handleTopic(Client& client, const std::vector<std::string>& params);

@@ -72,7 +72,7 @@ std::vector<std::string> split(const std::string& input, const char delmiter) {
 }
 
 void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
-	if (params.empty()) {
+	if (params.empty() || params.size() < 1) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "JOIN", params);
 		logMessage(ERROR, "CHANNEL", "Not enough parameters");
 		return;
@@ -99,7 +99,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		Channel* channel = nullptr;
 		if (channelExists(channelName)) {
 			channel = getChannel(channelName);
-			if (channel && channel->isInviteOnly()) {
+			if (channel && channel->isInviteOnly() && !channel->isClientInvited(&client)) {
 				logMessage(ERROR, "CHANNEL", "Channel " + channel->getChannelName() +" is invite-only. Please request an invite from the operator");
 				continue;
 			}
@@ -271,22 +271,18 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
 
-	if (params.empty()) {
+	if (params.empty() || params.size() < 2) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-        return;
+		return;
 	}
 
+	Channel *channel = nullptr;
 	std::string targetChannel = params[0];
-	if (targetChannel[0] == '#' || targetChannel[0] == '&')
-		handleChannelMode(client, params);
-	else
+	if (targetChannel[0] != '#' && targetChannel[0] != '&') {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-}
-
-void Server::handleChannelMode(Client& client, const std::vector<std::string>& params) {
-
-	std::string channelName = params[0];
-	Channel *channel = getChannel(channelName);
+		return ;
+	}
+	channel = getChannel(targetChannel);
 	if (!channel) {
 		messageHandle(ERR_NOSUCHCHANNEL, client, "MODE", params);
 		return;
@@ -295,6 +291,11 @@ void Server::handleChannelMode(Client& client, const std::vector<std::string>& p
 		messageHandle(ERR_NOTONCHANNEL, client, "MODE", params);
 		return;
 	}
+	handleChannelMode(client, channel, params);	
+}
+
+void Server::handleChannelMode(Client& client, Channel* channel, const std::vector<std::string>& params) {
+
 	std::string modeString = params[1];
 	if (modeString.size() < 2 || (modeString[0] != '+' && modeString[0] != '-')) {
 		messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
@@ -302,28 +303,47 @@ void Server::handleChannelMode(Client& client, const std::vector<std::string>& p
 	}
 
 	char operation = modeString[0];
-	char modeChar = modeString[1];
-	std::string modeParam = (params.size() > 2) ? params[2] : "";
+	size_t paramIndex = 2;  // track param for mode that needs them
+	for (size_t i = 1; i < modeString.size(); i++) {
+		char modeChar = modeString[i];
+		std::string modeParam = "";
 
-	switch (modeChar) {
-		case 'i':
-			inviteOnlyMode(client, *channel, operation);
-			break;
-		case 't':
-			//TopicRestrictionMode(client, *channel, operation);
-			//break;
-		case 'k':
-			channelKeyMode(client, *channel, operation, modeParam);
-			break;
-		case 'o':
-			//OperatorMode(client, *channel, operation, modeParam);
-			//break
-		case 'l':
-			// userLimitMode(client, *channel, operation, modeParam);
-			//break;
-		default:
-			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
-			break;
+		// Get parameter for modes that require it
+		if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l') && operation == '+') {
+			if (paramIndex >= params.size()) {
+				messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+				return;
+			}
+			modeParam = params[paramIndex++];
+		}
+		else if (modeChar == 'o' && operation == '-') {
+		if (paramIndex >= params.size()) {
+				messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+				return;
+			}
+			modeParam = params[paramIndex++];
+		}
+			
+		switch (modeChar) {
+			case 'i':
+				inviteOnlyMode(client, *channel, operation);
+				break;
+			case 't':
+				//TopicRestrictionMode(client, *channel, operation);
+				//break;
+			case 'k':
+				channelKeyMode(client, *channel, operation, modeParam);
+				break;
+			case 'o':
+				//OperatorMode(client, *channel, operation, modeParam);
+				//break
+			case 'l':
+				// userLimitMode(client, *channel, operation, modeParam);
+				//break;
+			default:
+				messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+				break;
+		}
 	}
 }
 
@@ -346,7 +366,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 			logMessage(DEBUG, "MODE", "Channel invite-only mode removed");
 			//broadcast();
 		} else 
-		logMessage(WARNING, "MODE", "channel is not invite-only mode");
+			logMessage(WARNING, "MODE", "channel is not invite-only mode");
 	}
 }
 
