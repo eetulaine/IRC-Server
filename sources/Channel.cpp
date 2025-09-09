@@ -5,7 +5,7 @@
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false){
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(true), topicOperatorOnly_(true), topic_("") {
 
 	if(!key.empty())
 		setChannelKey(key);
@@ -14,14 +14,12 @@ Channel::Channel(Client* client, const std::string &name, const std::string& key
 		+ this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
-		std::cout << GREEN "Client " << client->getNickname() << " is operator" END_COLOR << std::endl;
+		logMessage(DEBUG, "CLIENT", "Client " + client->getNickname() + " is operator");
 }
 
 Channel::~Channel() {
 	logMessage(WARNING, "CHANNEL", ": Channel destroyed");
 }
-
-
 
 //PUBLIC METHODS
 bool Channel::isMember(Client* client) {
@@ -39,14 +37,22 @@ void Channel::addChannelMember(Client *client) {
 		": Client " +  client->getNickname() + " Joined");
 }
 
+bool Channel::isMember(Client* client) {
+	auto it = members_.find(client);
+	if (it == members_.end()) {
+		return false;
+	}
+	return true;
+}
+
 void Channel::removeMember(Client *client) {
 
-	size_t status =  members_.erase(client);
-	if (status)
-		std::cout << "Member <" << client->getNickname() << "> is removed from" << name_ << "channel\n";
-	else
-		std::cout << "Menber <" << client->getNickname() << "> was not found in channel\n";
-}
+ 	size_t status =  members_.erase(client);
+ 	if (status)
+		logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> is removed from channel " + this->getChannelName());
+ 	else
+		logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> not found on channel " + this->getChannelName());
+ }
 
  void Channel::addInvite(Client *client) {
 	invited_.insert(client);
@@ -106,6 +112,23 @@ bool Channel::checkForChannelKey(Channel* channel, Client* client, const std::st
 	return true;
 }
 
+// TOPIC ACCESSORS
+
+bool Channel::isTopicOperatorOnly() const {
+	return topicOperatorOnly_;
+}
+
+std::string Channel::getTopic() const {
+	return topic_;
+}
+
+void Channel::setTopic(const std::string& topic) {
+	topic_ = topic;
+}
+
+void Channel::setTopicOperatorOnly(bool topicOperatorOnly) {
+	topicOperatorOnly_ = topicOperatorOnly;
+}
 
 // ACCESSORS
 void Channel::setChannelKey(const std::string& key) {

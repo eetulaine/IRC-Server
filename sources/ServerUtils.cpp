@@ -4,16 +4,16 @@
 
 bool Server::isNickUserValid(std::string cmd, std::string name) {
 	if (cmd == "NICK") {
-		std::regex nickName_regex(R"(^([A-Za-z\[\]\\`_^{}|])(?![$:#&~@+%])[-A-Za-z0-9\[\]\\`_^{}|]{0,8}$)");
+		std::regex nickName_regex(R"(^([A-Za-z\[\]\\`_^{}|])(?![$:#&~@+%])[-A-Za-z0-9\[\]\\`_^{}|]{0,15}$)");
 		if (std::regex_match(name, nickName_regex) == false)
-			return (FAIL);
+			return (true);
 	}
 	else if (cmd == "USER") {
 		std::regex userName_regex(R"(^[^\s@]{1,10}$)");
 		if (std::regex_match(name, userName_regex) == false)
-			return (FAIL);
+			return (true);
 	}
-	return (SUCCESS);
+	return (false);
 }
 
 Channel* Server::createChannel(Client* client, const std::string& channelName, const std::string& channelKey) {
@@ -21,6 +21,18 @@ Channel* Server::createChannel(Client* client, const std::string& channelName, c
     Channel* newChannel = new Channel(client, channelName, channelKey);
     channelMap_[channelName] = newChannel;
     return newChannel;
+}
+
+// removes Client from all the Channels joined (both members within Channel and joinedChannels within Client)
+void Server::leaveAllChannels(Client& client) {
+	std::set<std::string> channelsToLeave = client.getJoinedChannels(); // copy the set first so we can safely modify it (leaveChannel())
+	for (const std::string& channelName : channelsToLeave) {
+		Channel* channel = getChannel(channelName);
+		if (channel) {
+			channel->removeMember(&client);
+			client.leaveChannel(channelName);
+		}
+	}
 }
 
 bool Server::channelExists(const std::string& channelName) {

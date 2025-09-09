@@ -35,6 +35,7 @@ class Server {
 		int			port_;
 		std::string	password_;
 		int			serverSocket_;
+		static volatile sig_atomic_t isRunning_;
 		struct addrinfo		hints_, *res_;
 		const std::string	serverName_ = "IRCS_SERV";
 			// CHANNEL ----- Hager -----
@@ -48,6 +49,8 @@ class Server {
 		void		setSocketOption();		//-> set socket option to reuse address to avoid "address already in use" error
 		void		bindSocket();			//-> bind the socket to the address
 		void		initListen();			//-> prepare to listen for incoming connections
+		static void	stop(int signum);		//-> signal handler
+		void		customSignals(bool customSignals);
 
 		// dependent methods for "ServerActivity"
 		void		acceptNewClient(int epollFd); //-> accept new client request
@@ -72,7 +75,7 @@ class Server {
 		void		startServer();			//-> The loop, that will keep the server running and do diff actions
 		void		processBuffer(Client& client);
 		void		registerCommands();
-		void		closeServer();
+		void		closeServer(int epollFd);
 		void		closeClient(Client& client);
 
 		int			getPort() const;
@@ -80,21 +83,26 @@ class Server {
 		std::string	getPassword() const;
 		std::string	getServerName() const;
 
-		/// dependent Methods for commands
-		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
-		bool		isUserDuplicate(std::string  userName);
-		bool		isNickDuplicate(std::string  userName);
-		bool		isNickUserValid(std::string cmd, std::string name);
 
-		// commands
-		void		handleNick(Client& client, const std::vector<std::string>& params);
+		// CLIENT
+		Client* 	getClient(const std::string& nickName);
+
 
 		// CHANNEL
 		bool 		channelExists(const std::string& channelName);
 		Channel*	getChannel(const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
+		void		leaveAllChannels(Client& client);
+
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
 
+		Channel*	getChannelShahnaj(const std::string& channelName);
+		bool		isClientChannelMember(Channel *channel, Client& client);
+		void		printChannelMap();
+
+
+		// COMMAND
+		void		handleNick(Client& client, const std::vector<std::string>& params);
 		void		handleUser(Client& client, const std::vector<std::string>& params);
 		void		handlePass(Client& client, const std::vector<std::string>& params);
 		void		handlePing(Client& client, const std::vector<std::string>& params);
@@ -109,12 +117,29 @@ class Server {
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
 		void		inviteOnlyMode(Client& client, Channel& channel, char operation);
 		void 		channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key);
+  
+		void		handleTopic(Client& client, const std::vector<std::string>& params);
+		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
+		void		handleWhois(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
+
+
+		/// dependent Methods for commands
+		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
+		bool		isUserDuplicate(std::string  userName);
+		bool		isNickDuplicate(std::string  userName);
+		bool		isNickUserValid(std::string cmd, std::string name);
 
 		// Message
 		void		messageHandle(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
 		void		messageHandle(Client &client, std::string cmd, const std::vector<std::string>& params);
 		std::string	createMessage(int code, Client &client, std::string cmd, const std::vector<std::string>& params);
+		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend);
+		void		messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend, std::string channelName);
+		void		messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend);
+		
+
+
 
 };
 

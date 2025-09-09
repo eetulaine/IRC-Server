@@ -2,7 +2,7 @@
 #include "../includes/Client.hpp"
 #include "../includes/responseCodes.hpp"
 
-bool isRunning_ = true; // change the value to true when it start
+volatile sig_atomic_t Server::isRunning_ = true; // change the value to true when it start
 
 Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
 	initAddrInfo();
@@ -18,6 +18,7 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	//  std::cout << "Sock: " << serverSocket_ << "\n\n";
 
 	logMessage(INFO, "SERVER", "Server created. PORT[" + std::to_string(port_) + "] PASSWORD[" + password_ + "]");
+	customSignals(true);
 	registerCommands();
 }
 
@@ -28,13 +29,14 @@ Server::~Server() {
 		freeaddrinfo(res_);
 }
 
-void Server::closeServer() {
-	if (serverSocket_ >= 0) {
+void Server::closeServer(int epollFD) {
+	logMessage(INFO, "SERVER", "Server closing [closeServer()]");
+	if (epollFD)
+		close(epollFD);
+	if (serverSocket_ >= 0)
 		close(serverSocket_);
-	}
 	password_.clear();
-	signal(SIGINT, SIG_DFL);
-	signal(SIGTSTP, SIG_DFL);
+	customSignals(false);
 	isRunning_ = false;
 	exit(0);
 }
@@ -69,6 +71,26 @@ void Server::setNonBlocking() {
 		throw std::runtime_error("fcntl failed to set non-blocking");
 }
 
+void Server::customSignals(bool customSignals) {
+	if (customSignals) {
+		signal(SIGINT, stop); // ctrl+c
+		signal(SIGTERM, stop); // kill command shutdown
+		signal(SIGTSTP, stop); // ctrl+z
+		signal(SIGPIPE, SIG_IGN); // prevent crashes from broken pipes
+	}
+	else {
+		signal(SIGINT, SIG_DFL);
+		signal(SIGTERM, SIG_DFL);
+		signal(SIGTSTP, SIG_DFL);
+		signal(SIGPIPE, SIG_DFL);
+	}
+}
+
+void Server::stop(int signum) {
+	if (signum == SIGINT || signum == SIGTSTP || signum == SIGTERM)
+		isRunning_ = false;
+}
+
 void Server::startServer()
 {
 	logMessage(INFO, "SERVER", "Server started. SOCKET[" + std::to_string(serverSocket_) + "]");
@@ -89,11 +111,11 @@ void Server::startServer()
 
 	logMessage(INFO, "SERVER", "Waiting for events. ServerFD[" + std::to_string(epollFd) + "]");
 
-	while(isRunning_) {
+	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
-		// handle SIGINT;
-
+		if (!isRunning_)
+			closeServer(epollFd);
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
@@ -146,11 +168,13 @@ void Server::processBuffer(Client& client) {
 		std::string commandStr = parsed.first;
         std::vector<std::string> params = parsed.second;
 		std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
-		logMessage(WARNING, "COMMAND", "C[" + commandStr + "], P[" + params[0] + "]");
+		logMessage(DEBUG, "COMMAND", "C[" + commandStr + "], P[0][" + params[0] + "]");
 		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
 			return handleQuit(client, params);
+		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated())
+			messageHandle(ERR_ALREADYREGISTERED, client, commandStr, params);
 		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated())
-			messageHandle(ERR_NOTREGISTERED, client, "JOIN", params);
+			messageHandle(ERR_NOTREGISTERED, client, commandStr, params);
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
 			logMessage(WARNING, "COMMAND", "Unknown command: [" + commandStr + "] param[0]: " + params[0] + std::to_string(client.getClientFD()));
@@ -284,10 +308,10 @@ bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &st
 
 	if (str1Lower == str2Lower)
 	{
-		return (SUCCESS);
+		return (true);
 	}
 	else
-		return (FAIL);
+		return (false);
 }
 
 // **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
@@ -296,10 +320,10 @@ bool Server::isUserDuplicate(std::string userName) {
 	for (auto& [fd, client] : this->clients_) {
 		if (client && stringCompCaseIgnore(client->getUsername(), userName))
 		{
-			return (SUCCESS); // Duplicate found
+			return (true); // Duplicate found
 		}
 	}
-	return (FAIL);   //  this exits after first client!
+	return (false);   //  this exits after first client!
 }
 
 bool	Server::isNickDuplicate(std::string  nickName) {
@@ -307,9 +331,46 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	for (auto& [fd, client] : this->clients_) {
 		if (client && stringCompCaseIgnore(client->getNickname(), nickName))
 		{
-			return (SUCCESS);// Duplicate found
+			return (true);// Duplicate found
 		}
 	}
-	return (FAIL);
+	return (false);
 }
 
+// cross check with hager about the name and purpose
+Channel* Server::getChannelShahnaj(const std::string& channelName) {
+	auto it = channelMap_.find(channelName);
+	if (it != channelMap_.end()) {
+		return it->second;
+	}
+	return nullptr;
+}
+
+bool Server::isClientChannelMember(Channel *channel, Client& client) {
+	const std::set<Client*>& members = channel->getMembers();
+	if (members.find(&client) == members.end()) {
+		return false;
+	}
+	return true;
+}
+
+// }
+
+Client* Server::getClient(const std::string& nickName) {
+	for (auto& [fd, clientPtr] : clients_) {
+		if (clientPtr && stringCompCaseIgnore(clientPtr->getNickname(), nickName)) {
+			return clientPtr.get();  // return raw pointer from unique_ptr
+		}
+	}
+	return nullptr;  // not found
+}
+
+// bool Server::isClientChannelMember(Channel *channel, const std::string nickName) {
+// 	const std::set<Client*>& members = channel->getMembers();
+// 	for (Client* member : members) {
+// 		if (member && member->getNickname() == nickName) {
+// 			return true;   // Found a client with this nickname in the channel
+// 		}
+// 	}
+// 	return false; // Not found
+// }
