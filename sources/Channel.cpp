@@ -21,9 +21,17 @@ Channel::~Channel() {
 	logMessage(WARNING, "CHANNEL", ": Channel destroyed");
 }
 
-
 //PUBLIC METHODS
+bool Channel::isMember(Client* client) {
+	auto it = members_.find(client);
+	if (it == members_.end()) {
+		return false;
+	}
+	return true;
+}
+
 void Channel::addChannelMember(Client *client) {
+	
 	members_.insert(client);
 	logMessage(INFO, "CHANNEL", this->getChannelName() + 
 		": Client " +  client->getNickname() + " Joined");

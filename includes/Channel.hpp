@@ -15,6 +15,7 @@ class Channel {
 		// std::string topic_;
 		// std::string topic_setter_;  // is it needed?
 		std::string key_;  				//password for joining protected channels
+
 		bool keyProtected_;
 		bool inviteOnly_;				// channel is invite only
 		bool topicOperatorOnly_;		// if only operator can change channel topic
@@ -22,6 +23,8 @@ class Channel {
 		std::set<Client*> members_;     // pointer to store clients
 		std::set<Client*> operators_;	// keep track of operator rights
 		std::set<Client*> invited_;		// list of invitees of the channel
+		bool keyProtected_;
+		bool inviteOnly_;				// channel is invite only
 
 	public:
 		Channel(Client* client, const std::string &name, const std::string& );
