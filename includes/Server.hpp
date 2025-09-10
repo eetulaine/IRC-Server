@@ -120,7 +120,6 @@ class Server {
 		void 		channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key);
 		void		topicRestrictionMode(Client& client, Channel& channel, char operation);
 		void		operatorMode(Client& client, Channel& channel, char operation, const std::string& user);
-		void		userLimitMode(Client& client, Channel& channel, char operation, const std::string& user);
 		bool		isValidUserLimit(const std::string& str, int& userLimit);
   
 		void		handleTopic(Client& client, const std::vector<std::string>& params);
