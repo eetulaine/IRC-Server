@@ -310,17 +310,17 @@ void Server::handleChannelMode(Client& client, const std::vector<std::string>& p
 			inviteOnlyMode(client, *channel, operation);
 			break;
 		case 't':
-			//TopicRestrictionMode(client, *channel, operation);
-			//break;
+			topicRestrictionMode(client, *channel, operation);
+			break;
 		case 'k':
 			channelKeyMode(client, *channel, operation, modeParam);
 			break;
 		case 'o':
-			//OperatorMode(client, *channel, operation, modeParam);
-			//break
+			operatorMode(client, *channel, operation, modeParam);
+			break;
 		case 'l':
-			// userLimitMode(client, *channel, operation, modeParam);
-			//break;
+			userLimitMode(client, *channel, operation, modeParam);
+			break;
 		default:
 			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
 			break;
@@ -331,7 +331,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 
 	if (!channel.isOperator(&client)) {
 		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
-		return;
+		return logMessage(ERROR, "MODE", "User not an operator");
 	}
 	if (operation == '+') {
 		if (!channel.isInviteOnly()) {
@@ -348,6 +348,58 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 		} else 
 		logMessage(WARNING, "MODE", "channel is not invite-only mode");
 	}
+}
+
+void Server::topicRestrictionMode(Client& client, Channel& channel, char operation) {
+	if (!channel.isOperator(&client)) {
+		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
+		return logMessage(ERROR, "MODE", "User not an operator");
+	}
+	if (operation == '+') {
+		if (!channel.isTopicOperatorOnly()) {
+			channel.setTopicOperatorOnly(true);
+			logMessage(DEBUG, "MODE", "Topic settable by channel operator only");
+			//broadcast();
+		} else {
+			logMessage(WARNING, "MODE", "Topic is already set as operator-only");
+		}
+	} else if (operation == '-') { // if '-
+		if (channel.isTopicOperatorOnly()) {
+			channel.setTopicOperatorOnly(false);
+			logMessage(DEBUG, "MODE", "Topic settable by every channel member");
+			//broadcast();
+		} else {
+			logMessage(WARNING, "MODE", "Topic is already possible to be set by all");
+		}
+	}
+}
+
+void Server::operatorMode(Client& client, Channel& channel, char operation, const std::string& user) {
+	if (!channel.isOperator(&client)) {
+		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
+		return logMessage(ERROR, "MODE", "User not an operator");
+	}
+	if (user.empty()) {
+		// messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+		return logMessage(ERROR, "MODE", "No target user specified"); 
+	}
+	Client* targetClient = nullptr;
+	targetClient = getClient(user);
+	if (!channel.isMember(targetClient)) {
+		//messageHandle ERR_USERNOTINCHANNEL
+		return logMessage(ERROR, "MODE", "Target user not on channel"); 
+	}
+	if (operation == '+') {
+		channel.setOperator(targetClient, true);
+		// broadcast()
+		return logMessage(DEBUG, "MODE", "User " + user + " given operator rights by " + client.getNickname()); 
+	}
+	else if (operation == '-') {
+		channel.setOperator(targetClient, false);
+		// broadcast()
+		return logMessage(DEBUG, "MODE", "User " + user + " operator rights removed by " + client.getNickname());
+	}
+
 }
 
 void Server::channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key) {
@@ -369,6 +421,43 @@ void Server::channelKeyMode(Client& client, Channel& channel, char operation, co
 		logMessage(INFO, "MODE", "Channel key removed from channel: " + channel.getChannelName());
 		//broadcast();
 	}
+}
+
+bool Server::isValidUserLimit(const std::string& str, int& userLimit) {
+	std::istringstream iss(str);
+	int temp;
+	char remain;
+
+	if (!(iss >> temp) || (iss >> remain) || temp <= 0)
+		return false;
+	userLimit = temp;
+	return true;
+}
+
+void Server::userLimitMode(Client& client, Channel& channel, char operation, const std::string& userLimitStr) {
+	if (operation == '-') {
+		channel.setUserLimit(CHAN_USER_LIMIT);
+		return logMessage(DEBUG, "MODE", "User limit removed (defaulted back to 100)"); 
+	}
+	if (userLimitStr.empty()) {
+		// messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+		return logMessage(ERROR, "MODE", "No user limit specified for the channel"); 
+	}
+	if (!channel.isOperator(&client)) {
+		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
+		return logMessage(ERROR, "MODE", "User does not have operator rights");
+	}
+	int userLimit = 0;
+	if (!isValidUserLimit(userLimitStr, userLimit))
+		return logMessage(ERROR, "MODE", "Faulty user limit");
+	if (userLimit > 0 && userLimit <= CHAN_USER_LIMIT) {
+		channel.setUserLimit(userLimit);
+		return logMessage(DEBUG, "MODE", "User limit set to: " + std::to_string(userLimit));
+	}
+	else if (userLimit > CHAN_USER_LIMIT)
+		return logMessage(ERROR, "MODE", "User limit set too high > 100");
+	else
+		logMessage(ERROR, "MODE", "Faulty user limit");
 }
 
 int Server::handleKickParams(Client& client, const std::vector<std::string>& params) {

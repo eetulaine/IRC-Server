@@ -117,6 +117,10 @@ class Server {
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
 		void		inviteOnlyMode(Client& client, Channel& channel, char operation);
 		void 		channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key);
+		void		topicRestrictionMode(Client& client, Channel& channel, char operation);
+		void		operatorMode(Client& client, Channel& channel, char operation, const std::string& user);
+		void		userLimitMode(Client& client, Channel& channel, char operation, const std::string& user);
+		bool		isValidUserLimit(const std::string& str, int& userLimit);
   
 		void		handleTopic(Client& client, const std::vector<std::string>& params);
 		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
