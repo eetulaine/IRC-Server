@@ -100,14 +100,24 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		if (channelExists(channelName)) {
 			channel = getChannel(channelName);
 			if (channel && channel->isInviteOnly() && !channel->isClientInvited(&client)) {
+				std::string errorMsg = "473 " + client.getNickname() + " " + channelName + " :Cannot join channel (invite only)";
+				client.appendSendBuffer(errorMsg);
 				logMessage(ERROR, "CHANNEL", "Channel " + channel->getChannelName() +" is invite-only. Please request an invite from the operator");
+				messageBroadcast(*channel, client, "JOIN", "");
 				continue;
 			}
 			if (channel && !channel->checkForChannelKey(channel, &client, channelKey)) {
 				//messageHandle();
 				continue;
 			}
-		}	// check for channel resterictions??
+			if (static_cast<int>(channel->getMembers().size()) >= channel->getUserLimit()) {
+				std::string errorMsg = "471 " + client.getNickname() + " " + channelName + " :Cannot join channel (+l)";
+    			client.appendSendBuffer(errorMsg);
+				logMessage(ERROR, "CHANNEL", "Channel " + channel->getChannelName() +" is full");
+				messageBroadcast(*channel, client, "JOIN", "");
+				continue;
+			}
+		}
 		else {
 			channel = createChannel(&client, channelName, channelKey);
 			if (!channel) {

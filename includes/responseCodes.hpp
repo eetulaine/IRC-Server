@@ -36,6 +36,7 @@
 #define ERR_NEEDMOREPARAMS 		461 // Not enough parameters
 #define ERR_ALREADYREGISTERED	462 // Tries when already registered
 #define ERR_PASSWDMISMATCH		464 // incorrect password
+#define ERR_CHANNELISFULL		471 // channel is full (user limit reached)
 #define ERR_INVITEONLYCHAN		473 // trying to join an invite-only channel without invitation
 #define ERR_BADCHANNELKEY		475
 #define ERR_BADCHANMASK			479 // channel name does not match the proper syntax
