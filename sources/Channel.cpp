@@ -5,12 +5,7 @@
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: 	name_(name),
-		key_(""),
-		topic_(""), 
-		keyProtected_(false),
-		topicOperatorOnly_(true),
-		inviteOnly_(false) {
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(false), userLimit_(CHAN_USER_LIMIT), topic_("") {
 
 	if(!key.empty())
 		setChannelKey(key);
@@ -168,4 +163,12 @@ void Channel::setOperator(Client* client, bool isOperator) {
 	else
 		operators_.erase(client);
 
+}
+
+void Channel::setUserLimit(int userLimit) {
+	userLimit_ = userLimit;
+}
+
+int Channel::getUserLimit() const {
+	return userLimit_;
 }
