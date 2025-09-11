@@ -40,8 +40,7 @@ bool Server::channelExists(const std::string& channelName) {
 	return (channelMap_.find(channelName) != channelMap_.end());
 }
 
-void logMessage(logMsgType type, const std::string &action, const std::string &msg)
-{
+void logMessage(logMsgType type, const std::string &action, const std::string &msg) {
 	// to skip the PING log
 	if (msg.find("PING") != std::string::npos || msg.find("PONG") != std::string::npos)
 		return;
