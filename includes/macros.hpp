@@ -12,6 +12,7 @@
 
 #define MAX_CHAN_USER 100
 #define MAX_CHAN_TOTAL 1000
+#define CHAN_USER_LIMIT 100
 #define MAX_EVENTS 42
 #define MAX_MSG_LEN 512
 #define BUF_SIZE 1024
