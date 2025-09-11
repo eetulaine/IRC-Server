@@ -63,7 +63,12 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		logMessage(DEBUG, "PONG", "PONG response to ping. Client FD: " + std::to_string(client.getClientFD()));
 	} else if (code == ERR_ERRONEUSUSER) {
 		message += paramString + " :Erroneous format";
-	//last
+	} else if (code == RPL_TOPIC) {
+		message += paramString;
+	} else if (code == RPL_NAMREPLY) {
+		message += paramString;
+	} else if (code == RPL_ENDOFNAMES) {
+		message += paramString;
 	} else {
 		message += cmd + " " + paramString; // print all arguments
 	}
@@ -113,6 +118,7 @@ void Server::messageToClient(Client &targetClient, Client &fromClient, std::stri
 	std::string finalMsg;
 	if (command == "NICK") {
 		finalMsg = msgToSend;
+		std::cout << "NICK CHANGE: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
 	}
 	else
 		finalMsg = fromClient.getClientIdentifier() + " " + command + " " + channelName + " " + msgToSend + "\r\n";
