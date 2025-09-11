@@ -128,7 +128,29 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		channel->addChannelMember(&client);
 		client.addToJoinedChannelList(channel->getChannelName());
 		messageBroadcast(*channel, client, "JOIN", ""); // need to set it if  above mehtods have no error
+		if (channel->getTopic() != "") {
+			messageHandle(RPL_TOPIC, client, "JOIN", {channel->getChannelName() + " :" + channel->getTopic()});
+		}
+		/*
+		std::string replyMsg2 = "= " + channel->getChannelName() + " :";
+		std::cout << "MSG1. :" << replyMsg2 << std::endl;
+		const std::set<Client*>& members = channel->getMembers();
+		for (Client* member : members) {
+			if (channel->isOperator(member))
+				replyMsg2.append("@");
+			replyMsg2.append(member->getNickname() + " ");
+		}
+		std::cout << "MSG2. :" << replyMsg2 << std::endl;
+		messageHandle(RPL_NAMREPLY, client, "JOIN", {replyMsg2}); // what if list is longer then MAX_LEN
+		std::cout << "MSG3. :" << replyMsg2 << std::endl;
+		replyMsg2.clear();
+		std::cout << "MSG4. :" << std::endl;
+		messageHandle(RPL_ENDOFNAMES, client, "JOIN", {channel->getChannelName() + " :End of /NAMES list"});
+		std::cout << "MSG5. :" << std::endl;
+		*/
+
 	}
+
 }
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
@@ -176,11 +198,20 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 	if (client.isAuthenticated())
 	{
 		std::string oldNick = client.getNickname();
-		std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
+		//std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
+		//client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
 		client.setNickname(params[0]);
-		messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+		std::string replyMsg = ":" + oldNick + "!" + client.getUsername() +
+                           "@" + client.getHostname() + " NICK :" + client.getNickname() + "\r\n";
+
+		//messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+		client.appendSendBuffer(replyMsg); // send msg to all client connected to same channel
+		// messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+		messageBroadcast(client, "NICK", replyMsg);
+
 		logMessage(INFO, "NICK", "Nickname changed to " + client.getNickname() + ". Old Nickname: " + oldNick);
-		client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
+
+
 	}
 	else if (!client.getIsPassValid()) {
 		messageHandle(ERR_ALREADYREGISTERED, client, "NICK", params);
@@ -436,7 +467,7 @@ void Server::operatorMode(Client& client, Channel& channel, char operation, cons
 }
 
 void Server::channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key) {
-	
+
 	if (!channel.isOperator(&client)) {
 		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
 		return;
@@ -561,7 +592,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
     // }
 
 	// BROADCAST to all the channel members that a user is kicked from the channel
-	
+
 	messageBroadcast(*targetChannel, client, "KICK", clientToKick->getNickname() + " :" + kickReason);
 	targetChannel->removeMember(clientToKick);
 	clientToKick->leaveChannel(channel);
@@ -712,7 +743,7 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
 	}
 	// MESSAGE/BROADCAST? clientToBeInvited & client: User client inviting userToBeInvited to channelInvitedTo
-	
+
 	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
 	/* std::string confirmMessage = ":" + getServerName() + " 341 " +
                                 client.getNickname() + " " + userToBeInvited + " " + channelInvitedTo;

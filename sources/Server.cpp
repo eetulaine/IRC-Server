@@ -91,8 +91,7 @@ void Server::stop(int signum) {
 		isRunning_ = false;
 }
 
-void Server::startServer()
-{
+void Server::startServer() {
 	logMessage(INFO, "SERVER", "Server started. SOCKET[" + std::to_string(serverSocket_) + "]");
 	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
 
@@ -204,8 +203,7 @@ void Server::sendData(int currentFD) {
 	}
 }
 
-std::string Server::getClientIP(struct sockaddr_in clientSocAddr)
-{
+std::string Server::getClientIP(struct sockaddr_in clientSocAddr) {
 	char clientIP[INET_ADDRSTRLEN]; // if needed convert clientIP to std::string "std::string(clientIP)"
 		 // logging client IP | Do we need to log?? or only IP
 	if (!inet_ntop(AF_INET, &clientSocAddr.sin_addr, clientIP, sizeof(clientIP))) {
@@ -215,8 +213,7 @@ std::string Server::getClientIP(struct sockaddr_in clientSocAddr)
 	return (std::string(clientIP));
 }
 
-void Server::acceptNewClient(int epollFd)
-{
+void Server::acceptNewClient(int epollFd) {
 	//std::cout << "Inside Accept" << std::endl;
 	struct  sockaddr_in clientSocAddr;
 	socklen_t clientSocLen = sizeof(clientSocAddr);
@@ -296,8 +293,7 @@ std::string Server::getServerName() const {
 ///// ....... SHAHNAJ ........./////////
 // Utils methods related to commands. will move them later to specific section accordingly //////
 
-bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2)
-{
+bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2) {
 	std::string str1Lower = str1;
 	std::transform(str1Lower.begin(), str1Lower.end(), str1Lower.begin(),
 	               [](unsigned char c){ return std::tolower(c); });
@@ -353,8 +349,6 @@ bool Server::isClientChannelMember(Channel *channel, Client& client) {
 	}
 	return true;
 }
-
-// }
 
 Client* Server::getClient(const std::string& nickName) {
 	for (auto& [fd, clientPtr] : clients_) {

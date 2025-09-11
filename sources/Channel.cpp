@@ -10,7 +10,7 @@ Channel::Channel(Client* client, const std::string &name, const std::string& key
 	if(!key.empty())
 		setChannelKey(key);
 
-	logMessage(INFO, "CHANNEL", "Channel created. Name: [" 
+	logMessage(INFO, "CHANNEL", "Channel created. Name: ["
 		+ this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
@@ -31,9 +31,9 @@ bool Channel::isMember(Client* client) {
 }
 
 void Channel::addChannelMember(Client *client) {
-	
+
 	members_.insert(client);
-	logMessage(INFO, "CHANNEL", this->getChannelName() + 
+	logMessage(INFO, "CHANNEL", this->getChannelName() +
 		": Client " +  client->getNickname() + " Joined");
 }
 
@@ -48,7 +48,7 @@ void Channel::removeMember(Client *client) {
 
  void Channel::addInvite(Client *client) {
 	invited_.insert(client);
-	logMessage(DEBUG, "CHANNEL", this->getChannelName() + 
+	logMessage(DEBUG, "CHANNEL", this->getChannelName() +
 		": Client " +  client->getNickname() + " added to invited list");
 }
 
@@ -172,3 +172,4 @@ void Channel::setUserLimit(int userLimit) {
 int Channel::getUserLimit() const {
 	return userLimit_;
 }
+
