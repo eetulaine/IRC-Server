@@ -18,9 +18,9 @@ bool Server::isNickUserValid(std::string cmd, std::string name) {
 
 Channel* Server::createChannel(Client* client, const std::string& channelName, const std::string& channelKey) {
 
-    Channel* newChannel = new Channel(client, channelName, channelKey);
-    channelMap_[channelName] = newChannel;
-    return newChannel;
+	Channel* newChannel = new Channel(client, channelName, channelKey);
+	channelMap_[channelName] = newChannel;
+	return newChannel;
 }
 
 // removes Client from all the Channels joined (both members within Channel and joinedChannels within Client)
