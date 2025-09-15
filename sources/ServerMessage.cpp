@@ -16,7 +16,11 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	if (code < 10) {
 		message += "00";
 	}
-	message += std::to_string(code) + " " + client.getNickname() + " ";
+	message += std::to_string(code) + " ";
+	if (client.getNickname().empty() && code == ERR_NICKNAMEINUSE)
+		message += "* ";
+	else
+		message += client.getNickname() + " ";
 
 	if (code == RPL_WELCOME) {
 		message += ":Welcome to the " + this->getServerName() + " " + client.getClientIdentifier();
@@ -37,7 +41,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_NONICKNAMEGIVEN) {
 		message += ":No nickname given";
 	} else if (code == ERR_NICKNAMEINUSE) {
-		message += paramString + " :Nickname is already in use";
+		message += params[0] + " :Nickname is already in use.";
 	} else if (code == ERR_NOSUCHNICK) {
 		message += paramString + " :No such nick/channel";
 	} else if (code == ERR_CANNOTSENDTOCHAN) {
@@ -57,7 +61,9 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
 		message += "Unknown MODE flag";
 	} else if (code == RPL_WHOISUSER) {
-		message += client.getNickname() + " " + client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
+		message += client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
+	} else if (code == RPL_ENDOFNAMES) {
+		message += client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
 	} else if (code == RPL_PONG) {
 		message = ":" + this->serverName_ + " PONG "+ this->serverName_;
 		logMessage(DEBUG, "PONG", "PONG response to ping. Client FD: " + std::to_string(client.getClientFD()));
@@ -118,10 +124,11 @@ void Server::messageToClient(Client &targetClient, Client &fromClient, std::stri
 	std::string finalMsg;
 	if (command == "NICK") {
 		finalMsg = msgToSend;
-		std::cout << "NICK CHANGE: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
+		//std::cout << "NICK CHANGE: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
 	}
 	else
 		finalMsg = fromClient.getClientIdentifier() + " " + command + " " + channelName + " " + msgToSend + "\r\n";
+	std::cout << "SEND MSG: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
 	targetClient.appendSendBuffer(finalMsg);
 }
 
