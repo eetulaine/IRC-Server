@@ -38,7 +38,7 @@ int Client::receiveData() {
 }
 
 
-bool Client::sendData() {
+int Client::sendData() {
 	if (sendBuffer_.empty())
 		return (SUCCESS);
 
@@ -81,7 +81,7 @@ void Client::epollEventChange(uint32_t eventType) {
 void Client::addToJoinedChannelList(const std::string &channelName) {
 
 	joinedChannels_.insert(channelName);
-	logMessage(INFO, "CLIENT", 
+	logMessage(INFO, "CLIENT",
 		getNickname() + " joined channel: " + channelName);
 }
 

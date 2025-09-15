@@ -38,7 +38,7 @@ class Client {
 
 		// PUBLIC MEMBER FUNCTIONS
 		int receiveData();
-		bool sendData();
+		int sendData();
 		void addReadBuffer(const std::string& received);
 
 		// ACCESSORS

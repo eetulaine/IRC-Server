@@ -12,19 +12,17 @@ class Client;
 class Channel {
 	private:
 		std::string name_;
-		// std::string topic_;
-		// std::string topic_setter_;  // is it needed?
 		std::string key_;  				//password for joining protected channels
 
 		bool keyProtected_;
 		bool inviteOnly_;				// channel is invite only
 		bool topicOperatorOnly_;		// if only operator can change channel topic
+		int userLimit_;					// user limit, modifiable by mode -l
+
 		std::string topic_;				// channel topic
 		std::set<Client*> members_;     // pointer to store clients
 		std::set<Client*> operators_;	// keep track of operator rights
 		std::set<Client*> invited_;		// list of invitees of the channel
-		bool keyProtected_;
-		bool inviteOnly_;				// channel is invite only
 
 	public:
 		Channel(Client* client, const std::string &name, const std::string& );
@@ -53,6 +51,8 @@ class Channel {
 		bool checkForChannelKey(Channel* channel, Client* client, const std::string& providedKey);
 		const std::set<Client *> &getMembers() const; 			// list all clients in the channel
 		const std::set<Client*> &getOperators() const;			// list all operators
+		int getUserLimit() const;
+		void setUserLimit(int userLimit);
 		//size_t getOperatorCount() const;
 
 		// CHANNEL TOPIC

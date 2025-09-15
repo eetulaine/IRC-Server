@@ -12,7 +12,10 @@
 #define RPL_NOTOPIC				331
 #define RPL_TOPIC				332
 #define RPL_INVITING			341
+#define RPL_NAMREPLY			353
+#define RPL_ENDOFNAMES			366
 #define RPL_PONG 				399
+
 
 // ****************ERROR CODES************** //
 
@@ -27,7 +30,7 @@
 #define ERR_UNKNOWNCOMMAND 		421
 #define ERR_NONICKNAMEGIVEN 	431 // No nickname given
 #define ERR_ERRONEUSNICKNAME	432 // Erroneous nickname (e.g., contains forbidden characters)
-#define ERR_NICKNAMEINUSE 		433 // Nickname is already in use 
+#define ERR_NICKNAMEINUSE 		433 // Nickname is already in use
 #define ERR_ERRONEUSUSER 		434 // Erroneous username
 #define ERR_USERNOTINCHANNEL	441 // target user of a command not on given channel
 #define ERR_NOTONCHANNEL		442 // client attempting a channel affecting command not a member on the channel
@@ -36,6 +39,7 @@
 #define ERR_NEEDMOREPARAMS 		461 // Not enough parameters
 #define ERR_ALREADYREGISTERED	462 // Tries when already registered
 #define ERR_PASSWDMISMATCH		464 // incorrect password
+#define ERR_CHANNELISFULL		471 // channel is full (user limit reached)
 #define ERR_INVITEONLYCHAN		473 // trying to join an invite-only channel without invitation
 #define ERR_BADCHANNELKEY		475
 #define ERR_BADCHANMASK			479 // channel name does not match the proper syntax

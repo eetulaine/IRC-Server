@@ -5,12 +5,12 @@
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false), inviteOnly_(true), topicOperatorOnly_(true), topic_("") {
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(false), userLimit_(CHAN_USER_LIMIT), topic_("") {
 
 	if(!key.empty())
 		setChannelKey(key);
 
-	logMessage(INFO, "CHANNEL", "Channel created. Name: [" 
+	logMessage(INFO, "CHANNEL", "Channel created. Name: ["
 		+ this->getChannelName() + "], Key: [" + this->getChannelKey() + "]");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
@@ -31,18 +31,10 @@ bool Channel::isMember(Client* client) {
 }
 
 void Channel::addChannelMember(Client *client) {
-	
-	members_.insert(client);
-	logMessage(INFO, "CHANNEL", this->getChannelName() + 
-		": Client " +  client->getNickname() + " Joined");
-}
 
-bool Channel::isMember(Client* client) {
-	auto it = members_.find(client);
-	if (it == members_.end()) {
-		return false;
-	}
-	return true;
+	members_.insert(client);
+	logMessage(INFO, "CHANNEL", this->getChannelName() +
+		": Client " +  client->getNickname() + " Joined");
 }
 
 void Channel::removeMember(Client *client) {
@@ -56,7 +48,7 @@ void Channel::removeMember(Client *client) {
 
  void Channel::addInvite(Client *client) {
 	invited_.insert(client);
-	logMessage(DEBUG, "CHANNEL", this->getChannelName() + 
+	logMessage(DEBUG, "CHANNEL", this->getChannelName() +
 		": Client " +  client->getNickname() + " added to invited list");
 }
 
@@ -172,3 +164,12 @@ void Channel::setOperator(Client* client, bool isOperator) {
 		operators_.erase(client);
 
 }
+
+void Channel::setUserLimit(int userLimit) {
+	userLimit_ = userLimit;
+}
+
+int Channel::getUserLimit() const {
+	return userLimit_;
+}
+
