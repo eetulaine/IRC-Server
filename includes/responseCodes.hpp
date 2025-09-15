@@ -9,6 +9,7 @@
 #define RPL_ISUPPORT	 		005
 #define RPL_UMODEIS 			221 // test
 #define RPL_WHOISUSER 			311
+#define RPL_ENDOFWHOIS 			318
 #define RPL_NOTOPIC				331
 #define RPL_TOPIC				332
 #define RPL_INVITING			341
