@@ -11,6 +11,12 @@ void Server::registerCommands() {
 		logMessage(WARNING, "CAP", "CAP command ignored. ClientFD: " + std::to_string(client.getClientFD()));
 	};
 
+	commands["WHO"] = [this](Client& client, const std::vector<std::string>& params) {
+		(void)params;
+		(void)this;
+		logMessage(WARNING, "WHO", "WHO command ignored. ClientFD: " + std::to_string(client.getClientFD()));
+	};
+
 	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
 		handlePing(client, params);
 	};
@@ -131,24 +137,17 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		if (channel->getTopic() != "") {
 			messageHandle(RPL_TOPIC, client, "JOIN", {channel->getChannelName() + " :" + channel->getTopic()});
 		}
-		/*
 		std::string replyMsg2 = "= " + channel->getChannelName() + " :";
-		std::cout << "MSG1. :" << replyMsg2 << std::endl;
+
 		const std::set<Client*>& members = channel->getMembers();
 		for (Client* member : members) {
 			if (channel->isOperator(member))
 				replyMsg2.append("@");
 			replyMsg2.append(member->getNickname() + " ");
 		}
-		std::cout << "MSG2. :" << replyMsg2 << std::endl;
 		messageHandle(RPL_NAMREPLY, client, "JOIN", {replyMsg2}); // what if list is longer then MAX_LEN
-		std::cout << "MSG3. :" << replyMsg2 << std::endl;
 		replyMsg2.clear();
-		std::cout << "MSG4. :" << std::endl;
 		messageHandle(RPL_ENDOFNAMES, client, "JOIN", {channel->getChannelName() + " :End of /NAMES list"});
-		std::cout << "MSG5. :" << std::endl;
-		*/
-
 	}
 
 }
@@ -195,30 +194,24 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 		logMessage(ERROR, "NICK", "Nickname is already in use. Given Nickname: " + params[0]);
 		return;
 	}
+	else if (!client.getIsPassValid()) {
+		messageHandle(ERR_PASSWDMISMATCH, client, "NICK", params);
+		logMessage(ERROR, "NICK", "Password is not set yet" + params[0]);
+		return;
+	}
 	if (client.isAuthenticated())
 	{
-		std::string oldNick = client.getNickname();
-		//std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
-		//client.appendSendBuffer(replyMsg); // send msg to all client connexted to same channel
-		client.setNickname(params[0]);
-		std::string replyMsg = ":" + oldNick + "!" + client.getUsername() +
-                           "@" + client.getHostname() + " NICK :" + client.getNickname() + "\r\n";
-
-		//messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+		std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
 		client.appendSendBuffer(replyMsg); // send msg to all client connected to same channel
-		// messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
 		messageBroadcast(client, "NICK", replyMsg);
-
-		logMessage(INFO, "NICK", "Nickname changed to " + client.getNickname() + ". Old Nickname: " + oldNick);
-
-
+		logMessage(INFO, "NICK", "Nickname changed to " + params[0] + ". Old Nickname: " + client.getNickname());
+		client.setNickname(params[0]);
 	}
 	else if (!client.getIsPassValid()) {
 		messageHandle(ERR_ALREADYREGISTERED, client, "NICK", params);
 	}
 	else {
 		client.setNickname(params[0]); // + std::to_string(client.getClientFD() - 4)
-	//	messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
 		logMessage(INFO, "NICK", "Nickname set to " + client.getNickname());
 		if (client.isAuthenticated()) {
 			messageHandle(client, "NICK", params);
@@ -247,6 +240,11 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 	else if (isNickUserValid("USER", params[0])) { // do we need to check real name, host?
 		messageHandle(ERR_ERRONEUSUSER, client, "NICK", params);
 		logMessage(ERROR, "USER", "Invalid username format. Given Username: " + params[0]);
+		return;
+	}
+	else if (!client.getIsPassValid()) {
+		messageHandle(ERR_PASSWDMISMATCH, client, "USER", params);
+		logMessage(ERROR, "USER", "Password is not set yet" + params[0]);
 		return;
 	}
 	else
@@ -332,7 +330,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 		messageHandle(ERR_NOTONCHANNEL, client, "MODE", params);
 		return;
 	}
-	handleChannelMode(client, channel, params);	
+	handleChannelMode(client, channel, params);
 }
 
 void Server::handleChannelMode(Client& client, Channel* channel, const std::vector<std::string>& params) {
@@ -367,7 +365,7 @@ void Server::handleChannelMode(Client& client, Channel* channel, const std::vect
 			}
 			modeParam = params[paramIndex++];
 		}
-			
+
 		switch (modeChar) {
 		case 'i':
 			inviteOnlyMode(client, *channel, operation);
@@ -409,7 +407,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 			channel.setInviteOnly(false);
 			logMessage(DEBUG, "MODE", "Channel invite-only mode removed");
 			//broadcast();
-		} else 
+		} else
 			logMessage(WARNING, "MODE", "channel is not invite-only mode");
 	}
 }
@@ -445,18 +443,18 @@ void Server::operatorMode(Client& client, Channel& channel, char operation, cons
 	}
 	if (user.empty()) {
 		// messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-		return logMessage(ERROR, "MODE", "No target user specified"); 
+		return logMessage(ERROR, "MODE", "No target user specified");
 	}
 	Client* targetClient = nullptr;
 	targetClient = getClient(user);
 	if (!channel.isMember(targetClient)) {
 		//messageHandle ERR_USERNOTINCHANNEL
-		return logMessage(ERROR, "MODE", "Target user not on channel"); 
+		return logMessage(ERROR, "MODE", "Target user not on channel");
 	}
 	if (operation == '+') {
 		channel.setOperator(targetClient, true);
 		// broadcast()
-		return logMessage(DEBUG, "MODE", "User " + user + " given operator rights by " + client.getNickname()); 
+		return logMessage(DEBUG, "MODE", "User " + user + " given operator rights by " + client.getNickname());
 	}
 	else if (operation == '-') {
 		channel.setOperator(targetClient, false);
@@ -501,11 +499,11 @@ bool Server::isValidUserLimit(const std::string& str, int& userLimit) {
 void Server::userLimitMode(Client& client, Channel& channel, char operation, const std::string& userLimitStr) {
 	if (operation == '-') {
 		channel.setUserLimit(CHAN_USER_LIMIT);
-		return logMessage(DEBUG, "MODE", "User limit removed (defaulted back to 100)"); 
+		return logMessage(DEBUG, "MODE", "User limit removed (defaulted back to 100)");
 	}
 	if (userLimitStr.empty()) {
 		// messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-		return logMessage(ERROR, "MODE", "No user limit specified for the channel"); 
+		return logMessage(ERROR, "MODE", "No user limit specified for the channel");
 	}
 	if (!channel.isOperator(&client)) {
 		// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
@@ -818,5 +816,9 @@ void Server::handleWhois(Client& client, const std::vector<std::string>& params)
 	if (params[0].empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "WHOIS", params);
 	}
-	messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+	if (getClient(params[0]) == nullptr) {
+		messageHandle(ERR_NOSUCHNICK, client, "WHOIS", params);
+	}
+	messageHandle(RPL_ENDOFWHOIS, client, "WHOIS", {" :End of /WHOIS list"});
+	//messageHandle(RPL_WHOISUSER, client, "WHOIS", params); // {client.getNickname() + " " + client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName()}
 }
