@@ -60,6 +60,20 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += ":No recipient given";
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
 		message += "Unknown MODE flag";
+	} else if (code == ERR_CHANOPRIVSNEEDED) {
+		message += cmd + " :You're not channel operator";
+	} else if (code == ERR_NOSUCHCHANNEL) {
+		message += cmd + " :No such channel";
+	} else if (code == ERR_NOTONCHANNEL) {
+		message += cmd + " :You're not on that channel";
+	} else if (code == ERR_USERNOTINCHANNEL) {
+		message += params[1] + " " + cmd + " :They aren't on that channel";
+	} else if (code == ERR_CHANNELISFULL) {
+		message += cmd + " :Cannot join channel (+l)";
+	} else if (code == ERR_INVITEONLYCHAN) {
+		message += cmd + " :Cannot join channel (+i)";
+	} else if (code == ERR_USERONCHANNEL) {
+		message += params[0] + " " + cmd + " :is already on channel";
 	} else if (code == RPL_WHOISUSER) {
 		message += client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
 	} else if (code == RPL_ENDOFNAMES) {
@@ -70,11 +84,15 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_ERRONEUSUSER) {
 		message += paramString + " :Erroneous format";
 	} else if (code == RPL_TOPIC) {
-		message += paramString;
+		message += cmd + " :" + params[1];
+	} else if (code == RPL_NOTOPIC) {
+		message += cmd + " :No topic is set";
 	} else if (code == RPL_NAMREPLY) {
 		message += paramString;
 	} else if (code == RPL_ENDOFNAMES) {
 		message += paramString;
+	} else if (code == RPL_INVITING) {
+		message += params[0] + " " + cmd;
 	} else {
 		message += cmd + " " + paramString; // print all arguments
 	}
