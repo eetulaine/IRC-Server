@@ -54,8 +54,11 @@ int Client::sendData() {
 
 // After successfull msg process method will call appendSendBuffer to create EPOLLOUT event
 void Client::appendSendBuffer(std::string sendMsg) {
+	if (sendMsg.length() >= 2 && 
+        sendMsg.substr(sendMsg.length() - 2) != "\r\n") {
+        sendMsg += "\r\n";
+    }
 	this->sendBuffer_.append(sendMsg);
-	//std::cout << "SEND BUFFER: " << sendBuffer_ << "\n";
 	epollEventChange(EPOLLOUT);
 }
 
