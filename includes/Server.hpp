@@ -2,7 +2,6 @@
 
 #include <string>
 #include <iostream>
-//#include <iomanip>
 #include <algorithm> // transform
 #include <sys/socket.h> //-> needed for socket
 #include <sys/epoll.h>	//-> needed for epoll
@@ -35,6 +34,7 @@ class Server {
 		int			port_;
 		std::string	password_;
 		int			serverSocket_;
+		int			epollFd;
 		static volatile sig_atomic_t isRunning_;
 		struct addrinfo		hints_, *res_;
 		const std::string	serverName_ = "IRCS_SERV";
@@ -75,7 +75,7 @@ class Server {
 		void		startServer();			//-> The loop, that will keep the server running and do diff actions
 		void		processBuffer(Client& client);
 		void		registerCommands();
-		void		closeServer(int epollFd);
+		void		closeServer();
 		void		closeClient(Client& client);
 
 		int			getPort() const;

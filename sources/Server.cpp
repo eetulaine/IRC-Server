@@ -4,7 +4,7 @@
 
 volatile sig_atomic_t Server::isRunning_ = true; // change the value to true when it start
 
-Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
+Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1), epollFd(-1) {
 	initAddrInfo();
 	createAddrInfo();
 	createServSocket();
@@ -23,18 +23,37 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 }
 
 Server::~Server() {
-	if (serverSocket_ >= 0)
-		close(serverSocket_);
-	if (res_)
-		freeaddrinfo(res_);
+	if (isRunning_)
+		closeServer();
 }
 
-void Server::closeServer(int epollFD) {
+void Server::closeServer() {
 	logMessage(INFO, "SERVER", "Server closing [closeServer()]");
-	if (epollFD)
-		close(epollFD);
+
+	auto it = clients_.begin();
+	while (it != clients_.end()) {
+		if (it->second) {
+			closeClient(*it->second);
+			it = clients_.erase(it);
+		} else {
+			++it;
+		}
+	}
+	clients_.clear();
+	for (auto& [channelName, channel] : channelMap_) {
+		if (channel)
+			delete channel;
+	}
+	channelMap_.clear();
+	if (epollFd >= 0)
+		close(epollFd);
 	if (serverSocket_ >= 0)
 		close(serverSocket_);
+	if (res_ != nullptr) {
+		freeaddrinfo(res_);
+		res_ = nullptr;
+	}
+	commands.clear();
 	password_.clear();
 	customSignals(false);
 	isRunning_ = false;
@@ -93,7 +112,7 @@ void Server::stop(int signum) {
 
 void Server::startServer() {
 	logMessage(INFO, "SERVER", "Server started. SOCKET[" + std::to_string(serverSocket_) + "]");
-	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
+	epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
 
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
@@ -114,7 +133,7 @@ void Server::startServer() {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
 		if (!isRunning_)
-			closeServer(epollFd);
+			closeServer();
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}

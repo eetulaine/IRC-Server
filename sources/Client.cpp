@@ -10,6 +10,10 @@ Client::Client(int clientFD, std::string clientIP, int epollFd)
 }
 
 Client::~Client() {
+	joinedChannels_.clear();
+	nickname_.clear();
+	readBuffer_.clear();
+	sendBuffer_.clear();
 	close(clientFD_);
 	logMessage(INFO, "CLIENT", "Client destroyed. ClientFD[" + std::to_string(clientFD_) + "]");
 }
