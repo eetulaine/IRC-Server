@@ -56,6 +56,8 @@ class Channel {
 		const std::set<Client*> &getOperators() const;			// list all operators
 		int getUserLimit() const;
 		void setUserLimit(int userLimit);
+		bool checkChannelLimit(Client &client, Channel &channel);
+		bool checkInvitation(Client &client, Channel &channel);
 		//size_t getOperatorCount() const;
 
 		// CHANNEL TOPIC

@@ -136,22 +136,26 @@ bool Channel::isOperator(Client* client) const {
 	return operators_.find(client) != operators_.end();
 }
 
-bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
-
-	if (!channel->isKeyProtected())
-		return true;
-	if (providedKey.empty()) {
-		logMessage(ERROR, "CHANNEL",
-			"Key required: " + client->getNickname() + " failed to join");
+bool Channel::checkInvitation(Client &client, Channel &channel) {
+    if (channel.isInviteOnly() && !channel.isClientInvited(&client)) {
+       messageHandle(ERR_INVITEONLYCHAN, client, "JOIN", {channel.getName(),
+		":Cannot join channel (+i) - invite only"});
+		logMessage(WARNING, "CHANNEL",
+		"Client '" + client.getNickname() + "' attempted to join invite-only channel [" +
+		channel.getName() + "] without an invitation.");
 		return false;
 	}
-	if (getChannelKey() != providedKey) {
-		logMessage(ERROR, "CHANNEL",
-			"Incorrect key: " + client->getNickname() + " failed to join");
-		return false;
-	}
-	logMessage(INFO, "CHANNEL", "Joined key-protected channel: " + getName());
 	return true;
+}
+
+bool Channel::checkChannelLimit(Client &client, Channel &channel) {
+    if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
+        return true;
+   	messageHandle(ERR_CHANNELISFULL, client, "JOIN", {channel.getName(), std::to_string(channel.getUserLimit())});
+    logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
+	"' attempted to join channel '" + channel.getName() + 
+    "', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");
+    return false;
 }
 
 // TOPIC ACCESSORS

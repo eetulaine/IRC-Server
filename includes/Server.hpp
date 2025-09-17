@@ -131,8 +131,6 @@ class Server {
 						const std::string &modeParam, const std::vector<std::string>& params);
 		bool 		checkModeParam(const char modeChar, const char operation);
 
-		bool 		CheckInvitation(Client &client, Channel &channel);
-
 		/// dependent Methods for commands
 		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
 		bool		isUserDuplicate(std::string  userName);
