@@ -16,6 +16,7 @@
 #define RPL_NAMREPLY			353
 #define RPL_ENDOFNAMES			366
 #define RPL_PONG 				399
+#define RPL_CHANNELMODEIS		324
 
 
 // ****************ERROR CODES************** //
@@ -47,3 +48,4 @@
 #define	ERR_CHANOPRIVSNEEDED	482 // user doesn't have the required channel operator rights
 #define ERR_UMODEUNKNOWNFLAG	501
 #define ERR_UNKNOWNMODE			472
+#define ERR_USERSDONTMATCH		502

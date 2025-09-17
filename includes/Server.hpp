@@ -127,7 +127,11 @@ class Server {
 		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
 		void		handleWhois(Client& client, const std::vector<std::string>& params);
 		//void handlePass(Client& client, const std::vector<std::string>& params);
+		void		handleSingleMode(Client &client, Channel &channel, const char &operation, char &modeChar,
+						const std::string &modeParam, const std::vector<std::string>& params);
+		bool 		checkModeParam(const char modeChar, const char operation);
 
+		bool 		CheckInvitation(Client &client, Channel &channel);
 
 		/// dependent Methods for commands
 		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);

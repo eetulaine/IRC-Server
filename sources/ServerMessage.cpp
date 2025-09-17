@@ -93,6 +93,10 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += paramString;
 	} else if (code == RPL_INVITING) {
 		message += params[0] + " " + cmd;
+	} else if (code == ERR_USERSDONTMATCH){
+		message += cmd + "";         //MODE
+	} else if (code == RPL_CHANNELMODEIS){  //:<server> 324 <nick> <channel> <modes>
+		message += cmd + "current channel '" + params[0] + "' modes: " + params[1] + ".";
 	} else {
 		message += cmd + " " + paramString; // print all arguments
 	}
@@ -154,7 +158,7 @@ void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::s
 	// check conditions
 	if (!isClientChannelMember(&targetChannel, fromClient)) {
 		messageHandle(ERR_NOTONCHANNEL, fromClient, command, {msgToSend});
-		logMessage(ERROR, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getChannelName());
+		logMessage(ERROR, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getName());
 		return ;
 	}
 
@@ -164,13 +168,13 @@ void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::s
 		if (command == "PRIVMSG" || command == "NICK") {
 			if (targetClient->getClientFD() != fromClient.getClientFD()) {
 				if (isClientChannelMember(&targetChannel, *targetClient)) {
-					messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getChannelName());
+					messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getName());
 				}
 			}
 		}
 		else {
 			if (isClientChannelMember(&targetChannel, *targetClient)) {
-				messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getChannelName());
+				messageToClient(*targetClient, fromClient, command, msgToSend, targetChannel.getName());
 			}
 		}
 	}

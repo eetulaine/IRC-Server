@@ -34,8 +34,11 @@ class Channel {
 		void addChannelMember(Client *client);
 		void addInvite(Client* client);
 		void removeMember(Client *client);
-		static bool isValidChannelName(const std::string& name);
+		//static bool isValidChannelName(const std::string& name);
 		bool isOperator(Client* client) const;
+		std::string getModeString();
+		// bool isValidChannelKey(const std::string &key);
+		//void removeOperator(Client* client);
 		//void removeOperator(Client* client);
 
 		// ACCESSORS
@@ -45,10 +48,10 @@ class Channel {
 		bool isInviteOnly();
 		bool isClientInvited(Client* client) const;
 		void setInviteOnly(bool inviteOnly);
-		std::string getChannelName() const;
+		std::string getName() const;
 		// std::string getTopic(); // make it const?
 		std::string getChannelKey() const;
-		bool checkForChannelKey(Channel* channel, Client* client, const std::string& providedKey);
+		bool checkKey(Channel* channel, Client* client, const std::string& providedKey);
 		const std::set<Client *> &getMembers() const; 			// list all clients in the channel
 		const std::set<Client*> &getOperators() const;			// list all operators
 		int getUserLimit() const;
@@ -61,3 +64,6 @@ class Channel {
 		void setTopic(const std::string& topic);
 		void setTopicOperatorOnly(bool topicOperatorOnly);
 };
+bool isValidChannelName(const std::string& name);
+bool isValidChannelKey(const std::string &key);
+
