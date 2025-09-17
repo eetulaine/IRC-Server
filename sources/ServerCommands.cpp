@@ -160,24 +160,16 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		if (channel->getTopic() != "") {
 			messageHandle(RPL_TOPIC, client, "JOIN", {channel->getName() + " :" + channel->getTopic()});
 		}
-		/*
+
 		std::string replyMsg2 = "= " + channel->getName() + " :";
-		std::cout << "MSG1. :" << replyMsg2 << std::endl;
 		const std::set<Client*>& members = channel->getMembers();
 		for (Client* member : members) {
 			if (channel->isOperator(member))
-				replyMsg2.append("@");
-			replyMsg2.append(member->getNickname() + " ");
+				replyMsg2 += "@";
+			replyMsg2 += member->getNickname() + " ";
 		}
-		std::cout << "MSG2. :" << replyMsg2 << std::endl;
 		messageHandle(RPL_NAMREPLY, client, "JOIN", {replyMsg2}); // what if list is longer then MAX_LEN
-		std::cout << "MSG3. :" << replyMsg2 << std::endl;
-		replyMsg2.clear();
-		std::cout << "MSG4. :" << std::endl;
-		messageHandle(RPL_ENDOFNAMES, client, "JOIN", {channel->getName() + " :End of /NAMES list"});
-		std::cout << "MSG5. :" << std::endl;
-		*/
-
+		messageHandle(RPL_ENDOFNAMES, client, "JOIN", {channel->getChannelName(), " :End of /NAMES list\r\n"});
 	}
 
 }
