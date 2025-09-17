@@ -18,3 +18,5 @@
 #define BUF_SIZE 1024
 
 enum logMsgType { INFO, WARNING, ERROR, DEBUG };
+
+#define DEBUG_MODE true
