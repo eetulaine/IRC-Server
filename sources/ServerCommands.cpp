@@ -332,105 +332,150 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
 
-	if (params.empty() || params.size() < 2) {
+	if (params.empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+		logMessage(ERROR, "MODE", "Client '" + client.getNickname()
+			+ "' sent MODE command with insufficient parameters.");
+		return;
+	}
+	Channel *channel;
+	std::string target = params[0];
+	if (target[0] != '#' && target[0] != '&') {
+		Client* targetClient = getClient(target);
+		if (targetClient) {
+			if (targetClient->getNickname() != client.getNickname()) {
+				messageHandle(ERR_USERSDONTMATCH, client, "MODE", params);
+				logMessage(ERROR, "MODE", "Client " + client.getNickname()
+				+ "' attempted MODE command for another user '" + targetClient->getNickname() + "'.");
+				return;
+			}
+			messageHandle(ERR_UMODEUNKNOWNFLAG, client, "MODE", params);
+			logMessage(WARNING, "MODE", "Client '" + client.getNickname() +
+				"' attempted unsupported user MODE. User modes are not supported.");
+			return;
+		} else {
+		messageHandle(ERR_NOSUCHNICK, client,"MODE",params);
+		logMessage(ERROR, "MODE", "Client '" + client.getNickname() +  "' attempted MODE for nonexistent user '" + target + "'.");
+		}
+	}
+	channel = getChannel(target);
+	if (!channel) {
+		//messageHandle(ERR_USERSDONTMATCH, client, params);
+		logMessage(ERROR, "MODE", "Client '" + client.getNickname()
+			+ "' attempted MODE on non-existent channel [" + target + "].");
+		return;
+	}
+	if (params.size() == 1) {
+		std::string currentModes = channel->getModeString();
+		messageHandle(RPL_CHANNELMODEIS, client, "MODE", {target, currentModes});
+		logMessage(INFO, "MODE", "Channel [" + channel->getName() + "] current modes: " + currentModes + ".");
 		return;
 	}
 
-	Channel *channel = nullptr;
-	std::string targetChannel = params[0];
-	if (targetChannel[0] != '#' && targetChannel[0] != '&') {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-		return ;
-	}
-	channel = getChannel(targetChannel);
-	if (!channel) {
-		messageHandle(ERR_NOSUCHCHANNEL, client, targetChannel, params);
-		return;
-	}
 	if (!channel->isMember(&client)) {
-		messageHandle(ERR_NOTONCHANNEL, client, "MODE", params);
+		messageHandle(ERR_NOTONCHANNEL, client, "MODE", {channel->getName()});
+		logMessage(ERROR, "MODE",
+        	"Client '" + client.getNickname() + "' attempted MODE on channel '" 
+        	+ channel->getName() + "', but is not a member.");
 		return;
 	}
-	handleChannelMode(client, channel, params);
+	handleChannelMode(client, *channel, params);	
 }
 
-void Server::handleChannelMode(Client& client, Channel* channel, const std::vector<std::string>& params) {
+void Server::handleSingleMode(Client &client, Channel &channel, const char &operation, char &modeChar,
+	const std::string &modeParam, const std::vector<std::string>& params) {
+
+		switch (modeChar) {
+		case 'i':
+			inviteOnlyMode(client, channel, operation);
+			break;
+		case 't':
+			topicRestrictionMode(client, channel, operation);
+			break;
+		case 'k':
+			channelKeyMode(client, channel, operation, modeParam);
+			break;
+		case 'o':
+			operatorMode(client, channel, operation, modeParam);
+			break;
+		case 'l':
+			userLimitMode(client, channel, operation, modeParam);
+			break;
+		default:
+			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+			logMessage(WARNING, "MODE", "Client " + client.getNickname()
+				+ " sent unknown mode character '" + modeChar + "' on channel " + channel.getName() + ".");
+			break;
+		}
+}
+
+bool Server::checkModeParam(const char modeChar, const char operation) {
+
+	if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l') && operation == '+')
+		return true;
+	else if (modeChar == 'o' && operation == '-')
+		return true;
+	return false;
+}
+
+void Server::handleChannelMode(Client& client, Channel &channel, const std::vector<std::string>& params) {
 
 	std::string modeString = params[1];
 	if (modeString.size() < 2 || (modeString[0] != '+' && modeString[0] != '-')) {
-		messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+		//messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+		logMessage(ERROR, "MODE", "Client '" + client.getNickname()
+			+ "' used unkown mode character" + modeString[0] + " on channel '" + channel.getName() + "'.");
 		return;
 	}
-
-	char operation = modeString[0];
-	// char modeChar = modeString[1];
-	// std::string modeParam = (params.size() > 2) ? params[2] : "";
-
-	size_t paramIndex = 2;  // track param for mode that needs them
+	const char operation = modeString[0];
+	size_t paramIndex = 2;
 	for (size_t i = 1; i < modeString.size(); i++) {
 		char modeChar = modeString[i];
 		std::string modeParam = "";
 
-		// Get parameter for modes that require it
-		if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l') && operation == '+') {
+		if (checkModeParam(modeChar, operation)) {
 			if (paramIndex >= params.size()) {
-				messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+				//messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+				logMessage(ERROR, "MODE", "Client '" + client.getNickname()
+				+ "' sent MODE command with insufficient parameters for mode character "
+				+ modeChar + ".");
 				return;
 			}
 			modeParam = params[paramIndex++];
 		}
-		else if (modeChar == 'o' && operation == '-') {
-		if (paramIndex >= params.size()) {
-				messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-				return;
-			}
-			modeParam = params[paramIndex++];
-		}
-
-		switch (modeChar) {
-		case 'i':
-			inviteOnlyMode(client, *channel, operation);
-			break;
-		case 't':
-			topicRestrictionMode(client, *channel, operation);
-			break;
-		case 'k':
-			channelKeyMode(client, *channel, operation, modeParam);
-			break;
-		case 'o':
-			operatorMode(client, *channel, operation, modeParam);
-			break;
-		case 'l':
-			userLimitMode(client, *channel, operation, modeParam);
-			break;
-		default:
-			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
-			break;
-		}
+		handleSingleMode(client, channel, operation, modeChar, modeParam, params);
 	}
 }
 
 void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
-
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {});
-		return logMessage(ERROR, "MODE", "User not an operator");
+		//messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"});
+		logMessage(WARNING, "MODE", "Client '" + client.getNickname() + "' attempted to change +i on '"
+		+ channel.getName() + "' without operator privileges.");
+		return;
 	}
 	if (operation == '+') {
 		if (!channel.isInviteOnly()) {
 			channel.setInviteOnly(true);
-			logMessage(DEBUG, "MODE", "Channel is set to invite only");
-			messageBroadcast(channel, client, "MODE", "+i");
-		} else
-			logMessage(WARNING, "MODE", "Channel is already set to invite only");
-	} else {
+			messageBroadcast(channel, client, "MODE", channel.getName() + " +i");
+			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+i", ":Invite-only mode enabled"});
+			logMessage(INFO, "MODE", "Invite-only mode enabled on channel '" + channel.getName() + "' by client '"
+			+ client.getNickname() + "'");
+		} else {
+			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+i", ":Invite-only mode already enabled"});
+			logMessage(DEBUG, "MODE", "Invite-only mode already active on '" + channel.getName() + "'");
+		}
+	} else if (operation == '-') {
 		if (channel.isInviteOnly()) {
 			channel.setInviteOnly(false);
-			logMessage(DEBUG, "MODE", "Channel invite-only mode removed");
-			messageBroadcast(channel, client, "MODE", "-i");
-		} else
-			logMessage(WARNING, "MODE", "channel is not invite-only mode");
+			messageBroadcast(channel, client, "MODE", channel.getName() + " -i");
+			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "-i", ":Invite-only mode disabled"});
+			logMessage(INFO, "MODE", "Client '" + client.getNickname() + "' disabled invite-only mode on channel '"
+			+ channel.getName() + "'");
+		} else {
+			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "-i", ":Invite-only mode is not set"});
+			logMessage(DEBUG, "MODE", "Invite-only mode already disabled on '" + channel.getName() + "'");
+		}
 	}
 }
 
@@ -487,23 +532,26 @@ void Server::operatorMode(Client& client, Channel& channel, char operation, cons
 }
 
 void Server::channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key) {
-
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {});
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"});
+		logMessage(WARNING, "MODE", "Unauthorized key mode change attempt on " + channel.getName());
 		return;
 	}
 	if (operation == '+') {
-		if (key.empty())
-			// messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", params);
-			return;
-		channel.setChannelKey(key);
-		logMessage(INFO, "MODE", "Channel key set to: " + key + " for channel: " + channel.getName());
-		//broadcast();
+		if (key.empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", {channel.getName(), "+k", ":Key required for +k mode"});
+		logMessage(WARNING, "MODE", "Missing key in +k mode on " + channel.getName());
+		return;
 	}
-	else {
+	channel.setChannelKey(key);
+	messageBroadcast(channel, client, "MODE", channel.getName() + " +k");
+	/*messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+k", ":Channel key set"});*/
+	logMessage(INFO, "MODE", "+k set on " + channel.getName());
+    } else if (operation == '-') {
 		channel.setChannelKey("");
-		logMessage(INFO, "MODE", "Channel key removed from channel: " + channel.getName());
-		//broadcast();
+		messageBroadcast(channel, client, "MODE", channel.getName() + " -k");
+		/*messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "-k", ":Channel key removed"});*/
+		logMessage(INFO, "MODE", "+k removed from " + channel.getName());
 	}
 }
 
