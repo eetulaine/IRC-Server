@@ -312,15 +312,15 @@ bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &st
 
 // **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
 
-bool Server::isUserDuplicate(std::string userName) {
-	for (auto& [fd, client] : this->clients_) {
-		if (client && stringCompCaseIgnore(client->getUsername(), userName))
-		{
-			return (true); // Duplicate found
-		}
-	}
-	return (false);   //  this exits after first client!
-}
+// bool Server::isUserDuplicate(std::string userName) {
+// 	for (auto& [fd, client] : this->clients_) {
+// 		if (client && stringCompCaseIgnore(client->getUsername(), userName))
+// 		{
+// 			return (true); // Duplicate found
+// 		}
+// 	}
+// 	return (false);   //  this exits after first client!
+// }
 
 bool	Server::isNickDuplicate(std::string  nickName) {
 
