@@ -627,8 +627,6 @@ void Server::closeClient(Client& client) {
     ev.data.fd = clientfd;
 	epoll_ctl(epollfd, EPOLL_CTL_DEL, clientfd, &ev);
 	close(clientfd);
-	if (clients_[clientfd])
-		clients_.erase(clientfd);
 }
 
 void Server::handlePrivMsg(Client& client, const std::vector<std::string>& params) {
