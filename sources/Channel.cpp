@@ -16,6 +16,9 @@ Channel::Channel(Client* client, const std::string &name, const std::string& key
 }
 
 Channel::~Channel() {
+	members_.clear();
+	operators_.clear();
+	topic_.clear();
 	logMessage(WARNING, "CHANNEL", ": Channel destroyed");
 }
 
@@ -136,7 +139,7 @@ bool Channel::isOperator(Client* client) const {
 	return operators_.find(client) != operators_.end();
 }
 
-bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
+/* bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
 
 	if (!channel->isKeyProtected())
 		return true;
@@ -152,7 +155,7 @@ bool Channel::checkKey(Channel* channel, Client* client, const std::string& prov
 	}
 	logMessage(INFO, "CHANNEL", "Joined key-protected channel: " + getName());
 	return true;
-}
+} */
 
 // TOPIC ACCESSORS
 
