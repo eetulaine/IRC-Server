@@ -76,11 +76,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += params[0] + " " + cmd + " :is already on channel";
 	} else if (code == RPL_WHOISUSER) {
 		message += client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
-	} else if (code == RPL_ENDOFNAMES) {
-		message += client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
 	} else if (code == RPL_PONG) {
 		message = ":" + this->serverName_ + " PONG "+ this->serverName_;
-		logMessage(DEBUG, "PONG", "PONG response to ping. Client FD: " + std::to_string(client.getClientFD()));
 	} else if (code == ERR_ERRONEUSUSER) {
 		message += paramString + " :Erroneous format";
 	} else if (code == RPL_TOPIC) {
