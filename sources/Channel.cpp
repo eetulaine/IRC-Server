@@ -136,23 +136,23 @@ bool Channel::isOperator(Client* client) const {
 	return operators_.find(client) != operators_.end();
 }
 
-bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
+// bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
 
-	if (!channel->isKeyProtected())
-		return true;
-	if (providedKey.empty()) {
-		logMessage(ERROR, "CHANNEL",
-			"Key required: " + client->getNickname() + " failed to join");
-		return false;
-	}
-	if (getChannelKey() != providedKey) {
-		logMessage(ERROR, "CHANNEL",
-			"Incorrect key: " + client->getNickname() + " failed to join");
-		return false;
-	}
-	logMessage(INFO, "CHANNEL", "Joined key-protected channel: " + getName());
-	return true;
-}
+// 	if (!channel->isKeyProtected())
+// 		return true;
+// 	if (providedKey.empty()) {
+// 		logMessage(ERROR, "CHANNEL",
+// 			"Key required: " + client->getNickname() + " failed to join");
+// 		return false;
+// 	}
+// 	if (getChannelKey() != providedKey) {
+// 		logMessage(ERROR, "CHANNEL",
+// 			"Incorrect key: " + client->getNickname() + " failed to join");
+// 		return false;
+// 	}
+// 	logMessage(INFO, "CHANNEL", "Joined key-protected channel: " + getName());
+// 	return true;
+// }
 
 // TOPIC ACCESSORS
 
