@@ -76,6 +76,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += params[0] + " " + cmd + " :is already on channel";
 	} else if (code == RPL_WHOISUSER) {
 		message += client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName();
+	} else if (code == RPL_ENDOFWHOIS) {
+		message += paramString;
 	} else if (code == RPL_PONG) {
 		message = ":" + this->serverName_ + " PONG "+ this->serverName_;
 	} else if (code == ERR_ERRONEUSUSER) {
@@ -116,7 +118,6 @@ void Server::messageHandle(Client &client, std::string cmd, const std::vector<st
 		RPL_YOURHOST,
 		RPL_CREATED,
 		RPL_MYINFO,
-		RPL_ISUPPORT // optional
 	};
 
 	for (int code : responseCodes) {
