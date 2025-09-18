@@ -3,7 +3,6 @@
 #include "../includes/macros.hpp"
 
 void Server::registerCommands() {
-	// command CAP will be ignored
 
 	commands["CAP"] = [this](Client& client, const std::vector<std::string>& params) {
 		(void)params;
@@ -27,7 +26,6 @@ void Server::registerCommands() {
 
     commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
 	    handleJoin(client, params);
-		// printChannelMap();
     };
 	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleQuit(client, params);
@@ -52,15 +50,23 @@ void Server::registerCommands() {
 	commands["KICK"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleKick(client, params);
 	};
+
 	commands["INVITE"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleInvite(client, params);
 	};
+
 	commands["TOPIC"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleTopic(client, params);
 	};
+
 	commands["WHOIS"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleWhois(client, params);
 	};
+
+	// std::cout << "PARAM SIZE: " << params.size() << std::endl;
+	// for (const std::string& param : params) {
+	// 	std::cout << "- " << param << std::endl;
+	// }
 }
 
 std::vector<std::string> split(const std::string& input, const char delmiter) {
@@ -187,14 +193,13 @@ void Server::handlePing(Client& client, const std::vector<std::string>& params) 
 }
 
 int Server::handleNickParams(Client& client, const std::vector<std::string>& params) {
-	std::cout << "PARAM SIZE: " << params.size() << std::endl;
+
 	if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
 		logMessage(ERROR, "NICK", "No nickname given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
 	else if (params.size() > 1) {
-		std::cout << params[0] << " : " << params[1] << std::endl;
 		messageHandle(ERR_ERRONEUSNICKNAME, client, "NICK", params);
 		logMessage(ERROR, "NICK", "Invalid nickname format. Given Nickname: " + params[0]);
 		return (FAIL);
@@ -210,7 +215,7 @@ int Server::handleNickParams(Client& client, const std::vector<std::string>& par
 	}
 	else if (isNickDuplicate(params[0])) {
 		messageHandle(ERR_NICKNAMEINUSE, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Nickname is already in use. Given Nickname: " + params[0]);
+		logMessage(WARNING, "NICK", "Nickname is already in use. Given Nickname: " + params[0]);
 		return (FAIL);
 	}
 	else if (!client.getIsPassValid()) {
