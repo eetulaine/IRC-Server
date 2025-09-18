@@ -180,6 +180,7 @@ void Server::processBuffer(Client& client) {
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
+		//std::cout << "BUFFER: " << buf << std::endl;
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
@@ -189,20 +190,24 @@ void Server::processBuffer(Client& client) {
 		logMessage(DEBUG, "COMMAND", "C[" + commandStr + "]");
 		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
 			return handleQuit(client, params);
-		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated())
+		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated()) {
 			messageHandle(ERR_ALREADYREGISTERED, client, commandStr, params);
-		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated())
+			continue;
+		}
+		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated()) {
 			messageHandle(ERR_NOTREGISTERED, client, commandStr, params);
+			continue;
+		}
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
 			logMessage(WARNING, "COMMAND", "Unknown command: [" + commandStr + "]" + std::to_string(client.getClientFD()));
 			messageHandle(ERR_UNKNOWNCOMMAND, client, commandStr, params);
 			continue;
 		}
-		std::cout << "PARAM SIZE: " << params.size() << std::endl;
-		for (const std::string& param : params) {
-			std::cout << "- " << param << std::endl;
-		}
+		// std::cout << "PARAM SIZE: " << params.size() << std::endl;
+		// for (const std::string& param : params) {
+		// 	std::cout << "- " << param << std::endl;
+		// }
 		it->second(client, params);
 	}
 	client.setBuffer(buf);
