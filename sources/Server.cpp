@@ -180,6 +180,10 @@ void Server::processBuffer(Client& client) {
 			messageHandle(ERR_UNKNOWNCOMMAND, client, commandStr, params);
 			continue;
 		}
+		std::cout << "PARAM SIZE: " << params.size() << std::endl;
+		for (const std::string& param : params) {
+			std::cout << "- " << param << std::endl;
+		}
 		it->second(client, params);
 	}
 	client.setBuffer(buf);
