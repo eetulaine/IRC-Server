@@ -93,7 +93,7 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 	 for (const std::string& channelName : client.getJoinedChannels()) {
         Channel* channel = getChannel(channelName);
         if (channel) {
-            messageBroadcast(*channel, client, "QUIT", " :" + reason);
+            messageBroadcast(*channel, client, "QUIT", " :" + reason); // use other method
         }
     }
 	//client.appendSendBuffer(quitMessage);
@@ -118,7 +118,12 @@ void Server::handleWhois(Client& client, const std::vector<std::string>& params)
 
 	std::string nickName;
 // NEEd empty check
-	if (params.size() > 1) {
+
+	if (params.empty()) {
+		messageHandle(ERR_NONICKNAMEGIVEN, client, "WHOIS", params);
+		return;
+	}
+	else if (params.size() > 1) {
 		if (params[0].empty() && params[0] != this->serverName_) {
 			messageHandle(ERR_NOSUCHSERVER, client, "WHOIS", params);
 			return;
