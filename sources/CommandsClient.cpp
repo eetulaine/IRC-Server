@@ -16,7 +16,7 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 	}
 	else if (client.getIsAuthenticated()) {
 		messageHandle(ERR_ALREADYREGISTERED, client, "PASS", params);
-		logMessage(WARNING, "PASS", "Client is alrade registered");
+		logMessage(WARNING, "PASS", "Client is already registered");
 	}
 	else {
 		client.setPassword(params[0]);
@@ -27,7 +27,12 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 
 int Server::handleNickParams(Client& client, const std::vector<std::string>& params) {
 
-	if (params.empty() || params[0].empty()) {
+	if (!client.getIsPassValid()) {
+		messageHandle(ERR_PASSWDMISMATCH, client, "NICK", params);
+		logMessage(ERROR, "NICK", "Password is not set yet" + params[0]);
+		return (FAIL);
+	}
+	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
 		logMessage(ERROR, "NICK", "No nickname given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
@@ -49,11 +54,6 @@ int Server::handleNickParams(Client& client, const std::vector<std::string>& par
 	else if (isNickDuplicate(params[0])) {
 		messageHandle(ERR_NICKNAMEINUSE, client, "NICK", params);
 		logMessage(WARNING, "NICK", "Nickname is already in use. Given Nickname: " + params[0]);
-		return (FAIL);
-	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_PASSWDMISMATCH, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Password is not set yet" + params[0]);
 		return (FAIL);
 	}
 	return (SUCCESS);
@@ -87,7 +87,12 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 
 int Server::handleUserParams(Client& client, const std::vector<std::string>& params) {
 
-	if (params.empty() || params[0].empty()) {
+	if (!client.getIsPassValid()) {
+		messageHandle(ERR_PASSWDMISMATCH, client, "USER", params);
+		logMessage(ERROR, "USER", "Password is not set yet" + params[0]);
+		return (FAIL);
+	}
+	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params); // what code to use??
 		logMessage(ERROR, "USER", "No username given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
@@ -97,14 +102,14 @@ int Server::handleUserParams(Client& client, const std::vector<std::string>& par
 		logMessage(ERROR, "USER", "Not enough parameters. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
+	else if (params[3].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
+		logMessage(ERROR, "USER", "Empty realname. Client FD: " + std::to_string(client.getClientFD()));
+		return (FAIL);
+	}
 	else if (!isNickUserValid("USER", params[0])) { // do we need to check real name, host?
 		messageHandle(ERR_ERRONEUSUSER, client, "NICK", params);
 		logMessage(ERROR, "USER", "Invalid username format. Given Username: " + params[0]);
-		return (FAIL);
-	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_PASSWDMISMATCH, client, "USER", params);
-		logMessage(ERROR, "USER", "Password is not set yet" + params[0]);
 		return (FAIL);
 	}
 	return (SUCCESS);
@@ -119,7 +124,7 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 		client.setUsername("~" + params[0]);
 	else
 		client.setUsername(params[0]);
-	client.setHostname(params[2]);
+	client.setHostname(params[1]);
 	client.setRealName(params[3]);
 	logMessage(INFO, "USER", "Username and details are set. Username: " + client.getUsername());
 	if (client.isAuthenticated()) {
