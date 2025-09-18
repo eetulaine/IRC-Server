@@ -2,7 +2,6 @@
 #include "../includes/responseCodes.hpp"
 #include "../includes/macros.hpp"
 
-
 std::vector<std::string> split(const std::string& input, const char delmiter) {
 
 	std::vector<std::string> tokens;
@@ -12,14 +11,12 @@ std::vector<std::string> split(const std::string& input, const char delmiter) {
 	while (std::getline(ss, token, delmiter)) {
 		tokens.push_back(token);
 	}
-
 	return tokens;
 }
 
-bool Server::CheckInvitation(Client &client, Channel &channel) {
+bool Server::checkInvitation(Client &client, Channel &channel) {
 	if (channel.isInviteOnly() && !channel.isClientInvited(&client)) {
-		messageHandle(ERR_INVITEONLYCHAN, client, "JOIN", {channel.getName(),
-		":Cannot join channel (+i) - invite only"});
+		messageHandle(ERR_INVITEONLYCHAN, client, channel.getName(), {});
 		logMessage(WARNING, "CHANNEL",
 		"Client '" + client.getNickname() + "' attempted to join invite-only channel '" +
 		channel.getName() + "' without an invitation.");
@@ -37,10 +34,10 @@ bool checkChannelName(Client &client, const std::string& name) {
 	return false;
 }
 
-bool checkChannelLimit(Client &client, Channel &channel) {
+bool Server::checkChannelLimit(Client &client, Channel &channel) {
 	if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
 		return true;
-	//messageHandle(ERR_CHANNELISFULL, client, "JOIN", {channel.getName(), std::to_string(channel.getUserLimit())});
+	messageHandle(ERR_CHANNELISFULL, client, channel.getName(), {});
 	logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
 	"' attempted to join channel '" + channel.getName() +
 	"', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");
@@ -74,7 +71,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		Channel* channel;
 		if (channelExists(channelName)) {
 			channel = getChannel(channelName);
-			if (!CheckInvitation(client, *channel))
+			if (!checkInvitation(client, *channel))
 				continue;
 			if (!channel->checkKey(channel, &client, channelKey)) {
 				continue;
@@ -93,7 +90,6 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		channel->addChannelMember(&client);
 		client.addToJoinedChannelList(channel->getName());
 		logMessage(INFO, "CHANNEL", "Client '" + client.getNickname() + "' joined channel [" + channel->getName() + "]");
-
 
 		messageBroadcast(*channel, client, "JOIN", ""); // need to set it if  above mehtods have no error
 		if (channel->getTopic() != "") {
@@ -240,7 +236,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	if (operation == '+') {
 		if (!channel.isInviteOnly()) {
 			channel.setInviteOnly(true);
-			messageBroadcast(channel, client, "MODE", channel.getName() + " +i");
+			messageBroadcast(channel, client, "MODE", "+i");
 			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+i", ":Invite-only mode enabled"});
 			logMessage(INFO, "MODE", "Invite-only mode enabled on channel '" + channel.getName() + "' by client '"
 			+ client.getNickname() + "'");
@@ -495,7 +491,9 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
 	}
 	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
+
 	messageHandle(RPL_INVITING, client, channelInvitedTo, params);
+	messageToClient(*clientToBeInvited, client, "INVITE", channelInvitedTo);
     logMessage(INFO, "INVITE", "User " + client.getNickname() + " inviting " + userToBeInvited + " to " + channelInvitedTo);
 }
 
