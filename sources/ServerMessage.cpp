@@ -127,12 +127,7 @@ void Server::messageHandle(Client &client, std::string cmd, const std::vector<st
 }
 
 void Server::messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend) {
-	// check conditions
-	// std::string finalMsg;
-	// if (command == "NICK") {
-	// 	finalMsg = msgToSend;
-	// }
-	// else
+
 	std::string	finalMsg = fromClient.getClientIdentifier() + " " + command + " " + targetClient.getNickname() + " " + msgToSend + "\r\n";
 
 	targetClient.appendSendBuffer(finalMsg);
@@ -144,7 +139,6 @@ void Server::messageToClient(Client &targetClient, Client &fromClient, std::stri
 	std::string finalMsg;
 	if (command == "NICK") {
 		finalMsg = msgToSend;
-		//std::cout << "NICK CHANGE: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
 	}
 	else
 		finalMsg = fromClient.getClientIdentifier() + " " + command + " " + channelName + " " + msgToSend + "\r\n";
@@ -188,34 +182,4 @@ void Server::messageBroadcast(Client &fromClient, std::string command, const std
 			messageBroadcast(*targetChannel, fromClient, command, msgToSend);
 		}
 	}
-
-
-	// if (command == "NICK") {
-	// 	for (auto &client : this->clients_) {
-	// 		Client *targetClient = client.second.get();
-	// 		if (targetClient && (targetClient->getClientFD() != fromClient.getClientFD())) //(targetClient->getClientFD() != fromClient.getClientFD())
-	// 		{
-	// 			messageToClient(*targetClient, fromClient, command, msgToSend);
-	// 		}
-	// 	}
-	// }
-	// else {
-	// 	std::set<std::string> channels = fromClient.getJoinedChannels();
-	// 	for (const std::string& channelName : channels) {
-	// 		Channel* targetChannel = getChannel(channelName);
-	// 		if (targetChannel) {
-	// 			messageBroadcast(*targetChannel, fromClient, command, msgToSend);
-	// 		}
-	// 	}
-	// }
-
 }
-
-
-		// else if (command == "NICK") {
-		// 	if (targetClient->getClientFD() != fromClient.getClientFD()) {
-		// 		if (isClientChannelMember(&targetChannel, *targetClient)) {
-		// 			messageToClient(*targetClient, fromClient, command, msgToSend);
-		// 		}
-		// 	}
-		// }
