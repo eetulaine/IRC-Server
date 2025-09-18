@@ -102,7 +102,9 @@ class Server {
 
 
 		// COMMAND
+		int			handleNickParams(Client& client, const std::vector<std::string>& params);
 		void		handleNick(Client& client, const std::vector<std::string>& params);
+		int			handleUserParams(Client& client, const std::vector<std::string>& params);
 		void		handleUser(Client& client, const std::vector<std::string>& params);
 		void		handlePass(Client& client, const std::vector<std::string>& params);
 		void		handlePing(Client& client, const std::vector<std::string>& params);
@@ -112,6 +114,7 @@ class Server {
 		void		handleKick(Client& client, const std::vector<std::string>& params);
 		void		handleJoin(Client& client, const std::vector<std::string>& params);
 		int			handleKickParams(Client& client, const std::vector<std::string>& params);
+		int			handlePrivMsgParams(Client& client, const std::vector<std::string>& params);
 		void		handlePrivMsg(Client& client, const std::vector<std::string>& params);
 		void		handleInvite(Client& client, const std::vector<std::string>& params);
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
@@ -126,7 +129,6 @@ class Server {
 		void		handleTopic(Client& client, const std::vector<std::string>& params);
 		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
 		void		handleWhois(Client& client, const std::vector<std::string>& params);
-		//void handlePass(Client& client, const std::vector<std::string>& params);
 		void		handleSingleMode(Client &client, Channel &channel, const char &operation, char &modeChar,
 						const std::string &modeParam, const std::vector<std::string>& params);
 		bool 		checkModeParam(const char modeChar, const char operation);
@@ -135,7 +137,7 @@ class Server {
 
 		/// dependent Methods for commands
 		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
-		bool		isUserDuplicate(std::string  userName);
+		// bool		isUserDuplicate(std::string  userName);
 		bool		isNickDuplicate(std::string  userName);
 		bool		isNickUserValid(std::string cmd, std::string name);
 

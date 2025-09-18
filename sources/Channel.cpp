@@ -139,6 +139,7 @@ bool Channel::isOperator(Client* client) const {
 	return operators_.find(client) != operators_.end();
 }
 
+
 /* bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
 
 	if (!channel->isKeyProtected())
@@ -156,6 +157,7 @@ bool Channel::isOperator(Client* client) const {
 	logMessage(INFO, "CHANNEL", "Joined key-protected channel: " + getName());
 	return true;
 } */
+
 
 // TOPIC ACCESSORS
 

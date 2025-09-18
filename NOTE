@@ -102,3 +102,7 @@ WHOIS: Client ID: 8
 [04.09.2025 16:45:51] [ERROR][MAIN] epoll_ctl() failed for client data receive/send Bad file descriptor
 
 
+
+	// for (const std::string& param : params) {
+	// 	std::cout << "- " << param << std::endl;
+	// }
