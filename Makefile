@@ -9,11 +9,13 @@ OBJ_PATH 	:= objects/
 
 SRCS		:= main.cpp \
 				Server.cpp \
-				ServerCommands.cpp \
-				ServerMessage.cpp \
-				ServerUtils.cpp \
 				Client.cpp \
-				Channel.cpp
+				Channel.cpp \
+				CommandsChannel.cpp \
+				CommandsClient.cpp \
+				CommandsServer.cpp \
+				ServerMessage.cpp \
+				ServerUtils.cpp
 
 SRCS		:= $(addprefix $(SRC_PATH), $(SRCS))
 OBJS		:= $(SRCS:$(SRC_PATH)%.cpp=$(OBJ_PATH)%.o)
