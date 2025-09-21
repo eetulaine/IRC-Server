@@ -117,7 +117,6 @@ void Server::closeClient(Client& client) {
 void Server::handleWhois(Client& client, const std::vector<std::string>& params) {
 
 	std::string nickName;
-// NEEd empty check
 
 	if (params.empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "WHOIS", params);
