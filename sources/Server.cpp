@@ -149,7 +149,6 @@ void Server::startServer() {
 				else if (epEventList[i].events & EPOLLOUT) {
 					sendData(epEventList[i].data.fd);
 				}
-				//usleep(10000); // use for debugging -remove later***
 			}
 		}
 	}
@@ -163,6 +162,7 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 	iss >> cmd;
 	std::string token;
 	while (iss >> token) {
+
 		if (!token.empty() && token[0] == ':') { //check for ':' to indicate the last argument
 			std::string lastParam;
 			std::getline(iss, lastParam);
@@ -180,7 +180,7 @@ void Server::processBuffer(Client& client) {
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
-		//std::cout << "BUFFER: " << buf << std::endl;
+		std::cout << "BUFFER: " << buf << std::endl; // remove
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
@@ -362,7 +362,7 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 }
 
 // cross check with hager about the name and purpose
-Channel* Server::getChannelShahnaj(const std::string& channelName) {
+Channel* Server::getChannelShahnaj(const std::string& channelName) { // check the name
 	auto it = channelMap_.find(channelName);
 	if (it != channelMap_.end()) {
 		return it->second;
