@@ -4,7 +4,6 @@
 
 bool Server::isNickUserValid(std::string cmd, std::string name) {
 	if (cmd == "NICK") {
-		std::cout << "NAME: " << name << std::endl;
 		std::regex nickName_regex(R"(^([A-Za-z\[\]\\`_^{}|])(?![$#&~@+%:])[-A-Za-z0-9\[\]\\`_^{}|]{0,8}$)");
 		return (std::regex_match(name, nickName_regex));
 	}

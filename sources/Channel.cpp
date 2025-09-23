@@ -99,7 +99,7 @@ bool isValidChannelName(const std::string& name) {
 
 	if (name.empty() || name.size() > 50)
 		return false;
-	if (name[0] != '#' && name[0] != '&')
+	if (name[0] != '#')
 		return false;
 
 	static const std::string inavalidChar = " ,\a:";
