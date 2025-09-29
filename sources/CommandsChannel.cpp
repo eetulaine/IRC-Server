@@ -145,7 +145,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 	}
 	if (params.size() == 1) {
 		std::string currentModes = channel->getModeString();
-		messageHandle(RPL_CHANNELMODEIS, client, "MODE", {target, currentModes});
+		messageHandle(RPL_CHANNELMODEIS, client, client.getNickname(), {target, currentModes});
 		logMessage(INFO, "MODE", "Channel [" + channel->getName() + "] current modes: " + currentModes + ".");
 		return;
 	}
