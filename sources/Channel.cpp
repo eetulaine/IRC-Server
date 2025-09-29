@@ -196,14 +196,6 @@ std::string Channel::getName() const {
 	return this->name_;
 }
 
-Channel* Server::getChannel(const std::string& channelName) {
-	auto it = channelMap_.find(channelName);
-	if (it != channelMap_.end())
-		return it->second;
-	return nullptr;
-
-}
-
 const std::set<Client*>& Channel::getMembers() const {
 	return members_;
 }

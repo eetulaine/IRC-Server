@@ -88,9 +88,7 @@ class Server {
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
 		void		leaveAllChannels(Client& client);
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
-		Channel*	getChannelShahnaj(const std::string& channelName);
 		bool		isClientChannelMember(Channel *channel, Client& client);
-		void		printChannelMap();
 
 		// COMMAND
 		int			handleNickParams(Client& client, const std::vector<std::string>& params);

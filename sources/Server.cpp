@@ -12,10 +12,6 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	setSocketOption();
 	bindSocket();
 	initListen();
-	// std::cout << GREEN "\n=== SERVER CREATED ===\n" END_COLOR;
-	// std::cout << "Port: " << port_ << "\n";
-	// std::cout << "Pass: " << password_ << "\n";
-	//  std::cout << "Sock: " << serverSocket_ << "\n\n";
 
 	logMessage(INFO, "SERVER", "Server created. PORT[" + std::to_string(port_) + "] PASSWORD[" + password_ + "]");
 	customSignals(true);
@@ -174,13 +170,12 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 	return {cmd, params};
 }
 
-
 void Server::processBuffer(Client& client) {
 	std::string buf = client.getReadBuffer();
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
-		std::cout << "BUFFER: " << buf << std::endl; // remove
+		std::cout << "BUFFER: " << buf << std::endl; // remove ...............
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
@@ -318,9 +313,6 @@ std::string Server::getServerName() const {
 	return (this->serverName_);
 }
 
-///// ....... SHAHNAJ ........./////////
-// Utils methods related to commands. will move them later to specific section accordingly //////
-
 bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2) {
 	std::string str1Lower = str1;
 	std::transform(str1Lower.begin(), str1Lower.end(), str1Lower.begin(),
@@ -361,12 +353,10 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	return (false);
 }
 
-// cross check with hager about the name and purpose
-Channel* Server::getChannelShahnaj(const std::string& channelName) { // check the name
+Channel* Server::getChannel(const std::string& channelName) {
 	auto it = channelMap_.find(channelName);
-	if (it != channelMap_.end()) {
+	if (it != channelMap_.end())
 		return it->second;
-	}
 	return nullptr;
 }
 
@@ -386,13 +376,3 @@ Client* Server::getClient(const std::string& nickName) {
 	}
 	return nullptr;  // not found
 }
-
-// bool Server::isClientChannelMember(Channel *channel, const std::string nickName) {
-// 	const std::set<Client*>& members = channel->getMembers();
-// 	for (Client* member : members) {
-// 		if (member && member->getNickname() == nickName) {
-// 			return true;   // Found a client with this nickname in the channel
-// 		}
-// 	}
-// 	return false; // Not found
-// }

@@ -128,13 +128,13 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 	client.setRealName(params[3]);
 	logMessage(INFO, "USER", "Username and details are set. Username: " + client.getUsername());
 	if (client.isAuthenticated()) {
-		//messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
 		messageHandle(client, "USER", params);
 		logMessage(INFO, "REGISTRATION", "Client registration is successful. Nickname: " + client.getNickname());
 	}
 }
 
 int Server::handlePrivMsgParams(Client& client, const std::vector<std::string>& params) {
+
 	if (params.empty()) {
 		messageHandle(ERR_NORECIPIENT, client, "PRIVMSG", params);
 		logMessage(WARNING, "PRIVMSG", "No parameter provided. NICK: " + client.getNickname());
@@ -145,16 +145,11 @@ int Server::handlePrivMsgParams(Client& client, const std::vector<std::string>& 
 		logMessage(WARNING, "PRIVMSG", "No recipient to send msg. NICK: " + client.getNickname());
 		return (FAIL);
 	}
-	else if (params[1].empty()) {
+	else if (params.size() < 2 || params[1].empty()) {
 		messageHandle(ERR_NOTEXTTOSEND, client, "PRIVMSG", params);
 		logMessage(WARNING, "PRIVMSG", "No text to send. NICK: " + client.getNickname());
 		return (FAIL);
 	}
-
-	//for (const std::string& param : params) {
-	//	std::cout << "PARAM: " << param << std::endl;
-	//}
-
 	return (SUCCESS);
 }
 
@@ -169,7 +164,7 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	Channel *targetChannel;
 	if (target[0] == '#') {
 		isChannel = true;
-		targetChannel = getChannelShahnaj(target); // check the method
+		targetChannel = getChannel(target); // check the method
 
 		if (targetChannel == nullptr || (targetChannel && !isClientChannelMember(targetChannel, client))) {
 			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
