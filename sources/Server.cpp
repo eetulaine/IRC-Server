@@ -175,7 +175,7 @@ void Server::processBuffer(Client& client) {
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
-		std::cout << "BUFFER: " << buf << std::endl; // remove ...............
+		logMessage(DEBUG, "PRINT", "BUFFER: " + buf);
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
@@ -199,10 +199,6 @@ void Server::processBuffer(Client& client) {
 			messageHandle(ERR_UNKNOWNCOMMAND, client, commandStr, params);
 			continue;
 		}
-		// std::cout << "PARAM SIZE: " << params.size() << std::endl;
-		// for (const std::string& param : params) {
-		// 	std::cout << "- " << param << std::endl;
-		// }
 		it->second(client, params);
 	}
 	client.setBuffer(buf);
