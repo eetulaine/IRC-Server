@@ -127,9 +127,13 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 				+ "' attempted MODE command for another user '" + targetClient->getNickname() + "'.");
 				return;
 			}
-			messageHandle(ERR_UMODEUNKNOWNFLAG, client, "MODE", params);
-			logMessage(WARNING, "MODE", "Client '" + client.getNickname() +
+			if (!params[1].empty() && params[1] == "+i")
+				messageHandle(RPL_UMODEIS, client, "MODE", {"+i"});
+			else {
+				messageHandle(ERR_UMODEUNKNOWNFLAG, client, "MODE", {});
+				logMessage(WARNING, "MODE", "Client '" + client.getNickname() +
 				"' attempted unsupported user MODE. User modes are not supported.");
+			}
 			return;
 		} else {
 		messageHandle(ERR_NOSUCHNICK, client,"MODE",params);
@@ -138,7 +142,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 	}
 	channel = getChannel(target);
 	if (!channel) {
-		//messageHandle(ERR_USERSDONTMATCH, client, params);
+		messageHandle(ERR_NOSUCHCHANNEL, client, target, {});
 		logMessage(ERROR, "MODE", "Client '" + client.getNickname()
 			+ "' attempted MODE on non-existent channel [" + target + "].");
 		return;
@@ -199,8 +203,8 @@ bool Server::checkModeParam(const char modeChar, const char operation) {
 void Server::handleChannelMode(Client& client, Channel &channel, const std::vector<std::string>& params) {
 
 	std::string modeString = params[1];
-	if (modeString == "b")
-		messageHandle(RPL_ENDOFBANLIST, client, channel.getName(), {client.getNickname()});
+	if (modeString == "b" || modeString == "+b")
+		return messageHandle(RPL_ENDOFBANLIST, client, channel.getName(), {client.getNickname()});
 	if (modeString.size() < 2 || (modeString[0] != '+' && modeString[0] != '-')) {
 		//messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
 		logMessage(ERROR, "MODE", "Client '" + client.getNickname()
