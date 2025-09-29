@@ -2,91 +2,49 @@
 #include "../includes/responseCodes.hpp"
 #include "../includes/macros.hpp"
 
-void Server::registerCommands() {
-	// command CAP will be ignored
-
-	commands["CAP"] = [this](Client& client, const std::vector<std::string>& params) {
-		(void)params;
-		(void)this;
-		logMessage(WARNING, "CAP", "CAP command ignored. ClientFD: " + std::to_string(client.getClientFD()));
-	};
-
-	commands["WHO"] = [this](Client& client, const std::vector<std::string>& params) {
-		(void)params;
-		(void)this;
-		logMessage(WARNING, "WHO", "WHO command ignored. ClientFD: " + std::to_string(client.getClientFD()));
-	};
-
-	commands["PING"] = [this](Client& client, const std::vector<std::string>& params) {
-		handlePing(client, params);
-	};
-
-	commands["NICK"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleNick(client, params);
-    };
-
-    commands["JOIN"] = [this](Client& client, const std::vector<std::string>& params) {
-	    handleJoin(client, params);
-		// printChannelMap();
-    };
-	commands["QUIT"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleQuit(client, params);
-    };
-
-	commands["USER"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleUser(client, params);
-	};
-
-	commands["PASS"] = [this](Client& client, const std::vector<std::string>& params) {
-		handlePass(client, params);
-	};
-
-	commands["MODE"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleMode(client, params);
-	};
-
-	commands["PRIVMSG"] = [this](Client& client, const std::vector<std::string>& params) {
-		handlePrivMsg(client, params);
-	};
-
-	commands["KICK"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleKick(client, params);
-	};
-	commands["INVITE"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleInvite(client, params);
-	};
-	commands["TOPIC"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleTopic(client, params);
-	};
-	commands["WHOIS"] = [this](Client& client, const std::vector<std::string>& params) {
-		handleWhois(client, params);
-	};
-}
-
-
 std::vector<std::string> split(const std::string& input, const char delmiter) {
 
-    std::vector<std::string> tokens;
-    std::stringstream ss(input);
+	std::vector<std::string> tokens;
+	std::stringstream ss(input);
 
-    std::string token;
-    while (std::getline(ss, token, delmiter)) {
-        tokens.push_back(token);
-    }
+	std::string token;
+	while (std::getline(ss, token, delmiter)) {
+		tokens.push_back(token);
+	}
+	return tokens;
+}
 
-    return tokens;
+bool Server::checkInvitation(Client &client, Channel &channel) {
+	if (channel.isInviteOnly() && !channel.isClientInvited(&client)) {
+		messageHandle(ERR_INVITEONLYCHAN, client, channel.getName(), {});
+		logMessage(WARNING, "CHANNEL",
+		"Client '" + client.getNickname() + "' attempted to join invite-only channel '" +
+		channel.getName() + "' without an invitation.");
+		return false;
+	}
+	return true;
 }
 
 bool checkChannelName(Client &client, const std::string& name) {
 	if (isValidChannelName(name))
 		return true;
 	logMessage(ERROR, "JOIN",
-	"Client '" + client.getNickname() + "' attempted to join with invalid channel name '" + name +
-	"'. Channel names must start with '#' or '&' and contain only valid characters.");
+	"Client " + client.getNickname() + " attempted to join with invalid channel. Name: " + name);
+	return false;
+}
+
+bool Server::checkChannelLimit(Client &client, Channel &channel) {
+	if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
+		return true;
+	messageHandle(ERR_CHANNELISFULL, client, channel.getName(), {});
+	logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
+	"' attempted to join channel '" + channel.getName() +
+	"', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");
 	return false;
 }
 
 void Server::handleJoin(Client& client, const std::vector<std::string>& params) {
+
 	if (params.empty() || params.size() < 1) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "JOIN", params);
 		logMessage(ERROR, "JOIN", "Client '" + client.getNickname()
@@ -102,7 +60,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		const std::string& channelKey = (i < providedKeys.size()) ? providedKeys[i] : "";
 
 		if (!checkChannelName(client, channelName)) {
-			continue;
+			continue; // should we continue
 		}
 		if (client.isInChannel(channelName)) {
 			logMessage(WARNING, "JOIN", "Client '" + client.getNickname() + "' attempted to re-join channel '"
@@ -112,7 +70,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		Channel* channel;
 		if (channelExists(channelName)) {
 			channel = getChannel(channelName);
-			if (!channel->checkInvitation(client, *channel))
+			if (!checkInvitation(client, *channel))
 				continue;
 			if (!channel->checkKey(channel, &client, channelKey)) {
 				continue;
@@ -131,169 +89,22 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		channel->addChannelMember(&client);
 		client.addToJoinedChannelList(channel->getName());
 		logMessage(INFO, "CHANNEL", "Client '" + client.getNickname() + "' joined channel [" + channel->getName() + "]");
-		
-		
+
 		messageBroadcast(*channel, client, "JOIN", ""); // need to set it if  above mehtods have no error
 		if (channel->getTopic() != "") {
 			messageHandle(RPL_TOPIC, client, "JOIN", {channel->getName() + " :" + channel->getTopic()});
 		}
-	}
-}
 
-void Server::handlePing(Client& client, const std::vector<std::string>& params) {
-	// for (const std::string& param : params) {
-	// 	std::cout << "- " << param << std::endl;
-	// }
-	(void)client;
-	if (params.empty()) {
-		messageHandle(ERR_NOORIGIN, client, "PING", params);
-	}
-	else if (params[0] != this->serverName_) {
-		messageHandle(ERR_NOSUCHSERVER, client, "PING", params);
-	}
-	else {
-		messageHandle(RPL_PONG, client, "PING", params);
-		logMessage(DEBUG, "PING", "PING received. Client FD: " + std::to_string(client.getClientFD()));
-	}
-
-}
-
-void Server::handleNick(Client& client, const std::vector<std::string>& params) {
-
-	// No nickname given
-	logMessage(DEBUG, "NICK:NICKNAME", " NICK1: " + params[0]);
-	if (client.getNickname() == params[0]) {
-		logMessage(WARNING, "NICK", "Nickname is same as existing Nickname: " + client.getNickname());
-		return;
-	}
-	else if (params.empty() || params[0].empty()) {
-		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
-		logMessage(ERROR, "NICK", "No nickname given. Client FD: " + std::to_string(client.getClientFD()));
-		return;
-	}
-	else if (isNickUserValid("NICK", params[0])) {
-		messageHandle(ERR_ERRONEUSNICKNAME, client, "NICK", params);
-		logMessage(DEBUG, "NICK:NICKNAME", " NICK2: " + params[0]);
-		logMessage(ERROR, "NICK", "Invalid nickname format. Given Nickname: " + params[0]);
-		return;
-	}
-	else if (isNickDuplicate(params[0])) {
-		messageHandle(ERR_NICKNAMEINUSE, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Nickname is already in use. Given Nickname: " + params[0]);
-		return;
-	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_PASSWDMISMATCH, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Password is not set yet" + params[0]);
-		return;
-	}
-	if (client.isAuthenticated())
-	{
-		std::string replyMsg = client.getClientIdentifier() + " NICK :" + params[0] + "\r\n";
-		client.appendSendBuffer(replyMsg); // send msg to all client connected to same channel
-		messageBroadcast(client, "NICK", replyMsg);
-		logMessage(INFO, "NICK", "Nickname changed to " + params[0] + ". Old Nickname: " + client.getNickname());
-		client.setNickname(params[0]);
-	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_ALREADYREGISTERED, client, "NICK", params);
-	}
-	else {
-		client.setNickname(params[0]); // + std::to_string(client.getClientFD() - 4)
-		logMessage(INFO, "NICK", "Nickname set to " + client.getNickname());
-		if (client.isAuthenticated()) {
-			messageHandle(client, "NICK", params);
-			logMessage(INFO, "REGISTRATION", "Client registration is successful. Username: " + client.getUsername());
+		std::string replyMsg2 = "= " + channel->getName() + " :";
+		const std::set<Client*>& members = channel->getMembers();
+		for (Client* member : members) {
+			if (channel->isOperator(member))
+				replyMsg2 += "@";
+			replyMsg2 += member->getNickname() + " ";
 		}
+		messageHandle(RPL_NAMREPLY, client, "JOIN", {replyMsg2}); // what if list is longer then MAX_LEN
+		messageHandle(RPL_ENDOFNAMES, client, "JOIN", {channel->getName(), " :End of /NAMES list\r\n"});
 	}
-}
-
-void Server::handleUser(Client& client, const std::vector<std::string>& params) {
-
-	if (params.empty() || params[0].empty()) {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params); // what code to use??
-		logMessage(ERROR, "USER", "No username given. Client FD: " + std::to_string(client.getClientFD()));
-		return;
-	}
-	else if (params.size() != 4) {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
-		logMessage(ERROR, "USER", "Not enough parameters. Client FD: " + std::to_string(client.getClientFD()));
-		return;
-	}
-	// else if (isUserDuplicate(params[0])) {
-	// 	 // make unique?
-	// 	logMessage(WARNING, "USER", "Username is already in use. Given Username: " + params[0]);
-	// 	return;
-	// }
-	else if (isNickUserValid("USER", params[0])) { // do we need to check real name, host?
-		messageHandle(ERR_ERRONEUSUSER, client, "NICK", params);
-		logMessage(ERROR, "USER", "Invalid username format. Given Username: " + params[0]);
-		return;
-	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_PASSWDMISMATCH, client, "USER", params);
-		logMessage(ERROR, "USER", "Password is not set yet" + params[0]);
-		return;
-	}
-	else
-	{
-		if (params[0][0] != '~')
-			client.setUsername("~" + params[0]); // + std::to_string(client.getClientFD())
-		else
-			client.setUsername(params[0]);
-		client.setHostname(params[2]); // check index
-		client.setRealName(params[3]);
-		//messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
-		logMessage(INFO, "USER", "Username and details are set. Username: " + client.getUsername());
-		if (client.isAuthenticated()) {
-			messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
-			messageHandle(client, "USER", params);
-			logMessage(INFO, "REGISTRATION", "Client registration is successful. Username: " + client.getUsername());
-		}
-	}
-}
-
-void Server::handlePass(Client& client, const std::vector<std::string>& params) {
-
-	// need to ensure at beginning pass argument
-	if (params.empty() || params[0].empty()) {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "PASS", params);
-		logMessage(ERROR, "PASS", "Empty password");
-		return;
-	}
-	else if (params[0] != this->getPassword()) {
-		messageHandle(ERR_PASSWDMISMATCH, client, "PASS", params);
-		logMessage(ERROR, "PASS", "Password mismatch. Given Password: " + params[0]);
-		return;
-	}
-	else if (client.getIsAuthenticated()) {
-		messageHandle(ERR_ALREADYREGISTERED, client, "PASS", params);
-		logMessage(WARNING, "PASS", "Authentication done already");
-	}
-	else {
-		client.setPassword(params[0]);
-		client.setIsPassValid(true);
-		logMessage(INFO, "PASS", "Password validated for ClientFD: " + std::to_string(client.getClientFD()));
-		//client.setAuthenticated(true); // check logic, usually pass always come first
-	}
-}
-
-void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-    if (!client.isConnected() || !client.isAuthenticated()) //no broadcasting from unconnected or unregistered clients
-		return closeClient(client);
-	std::string reason = "Client quit";
-	if (!params.empty())
-		reason = params[0];
-	// BROADCAST the quitMessage to all the channels the client quitting is a member of
-	 for (const std::string& channelName : client.getJoinedChannels()) {
-        Channel* channel = getChannel(channelName);
-        if (channel) {
-            messageBroadcast(*channel, client, "QUIT", " :" + reason);
-        }
-    }
-	//client.appendSendBuffer(quitMessage);
-	logMessage(INFO, "QUIT", "User " + client.getNickname() + " quit (reason: " + reason + ")");
-	closeClient(client);
 }
 
 void Server::handleMode(Client& client, const std::vector<std::string>& params) {
@@ -306,7 +117,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 	}
 	Channel *channel;
 	std::string target = params[0];
-	if (target[0] != '#' && target[0] != '&') {
+	if (target[0] != '#') {
 		Client* targetClient = getClient(target);
 		if (targetClient) {
 			if (targetClient->getNickname() != client.getNickname()) {
@@ -333,7 +144,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 	}
 	if (params.size() == 1) {
 		std::string currentModes = channel->getModeString();
-		messageHandle(RPL_CHANNELMODEIS, client, "MODE", {target, currentModes});
+		messageHandle(RPL_CHANNELMODEIS, client, client.getNickname(), {target, currentModes});
 		logMessage(INFO, "MODE", "Channel [" + channel->getName() + "] current modes: " + currentModes + ".");
 		return;
 	}
@@ -341,11 +152,11 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 	if (!channel->isMember(&client)) {
 		messageHandle(ERR_NOTONCHANNEL, client, "MODE", {channel->getName()});
 		logMessage(ERROR, "MODE",
-        	"Client '" + client.getNickname() + "' attempted MODE on channel '" 
+        	"Client '" + client.getNickname() + "' attempted MODE on channel '"
         	+ channel->getName() + "', but is not a member.");
 		return;
 	}
-	handleChannelMode(client, *channel, params);	
+	handleChannelMode(client, *channel, params);
 }
 
 void Server::handleSingleMode(Client &client, Channel &channel, const char &operation, char &modeChar,
@@ -387,6 +198,8 @@ bool Server::checkModeParam(const char modeChar, const char operation) {
 void Server::handleChannelMode(Client& client, Channel &channel, const std::vector<std::string>& params) {
 
 	std::string modeString = params[1];
+	if (modeString == "b")
+		messageHandle(RPL_ENDOFBANLIST, client, channel.getName(), {client.getNickname()});
 	if (modeString.size() < 2 || (modeString[0] != '+' && modeString[0] != '-')) {
 		//messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
 		logMessage(ERROR, "MODE", "Client '" + client.getNickname()
@@ -423,7 +236,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	if (operation == '+') {
 		if (!channel.isInviteOnly()) {
 			channel.setInviteOnly(true);
-			messageBroadcast(channel, client, "MODE", channel.getName() + " +i");
+			messageBroadcast(channel, client, "MODE", "+i");
 			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+i", ":Invite-only mode enabled"});
 			logMessage(INFO, "MODE", "Invite-only mode enabled on channel [" + channel.getName() + "] by client '"
 			+ client.getNickname() + "'");
@@ -622,89 +435,6 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 	logMessage(INFO, "KICK", "User " + userToKick + " kicked from " + channel + " by " + client.getNickname() + " (reason: " + kickReason + ")");
 }
 
-void Server::closeClient(Client& client) {
-
-	int clientfd = client.getClientFD();
-	int epollfd = client.getEpollFd();
-	leaveAllChannels(client); // remove client from Channel member lists and clear joinedChannels
-	client.setConnected(false);
-	struct epoll_event ev;
-    ev.events = EPOLLIN;
-    ev.data.fd = clientfd;
-	epoll_ctl(epollfd, EPOLL_CTL_DEL, clientfd, &ev);
-	close(clientfd);
-	if (clients_[clientfd])
-		clients_.erase(clientfd);
-}
-
-void Server::handlePrivMsg(Client& client, const std::vector<std::string>& params) {
-	for (const std::string& param : params) {
-		std::cout << "- " << param << std::endl;
-	}
-
-	// ERR_NOSUCHNICK  ERR_TOOMANYTARGETS ERR_CANNOTSENDTOCHAN
-	if (params.empty()) {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "PRIVMSG", params);
-		logMessage(ERROR, "PRIVMSG", "No parameter provided");
-	}
-	else if (params[0].empty()) {
-		messageHandle(ERR_NORECIPIENT, client, "PRIVMSG", params);
-		logMessage(ERROR, "PRIVMSG", "No recipient to send msg");
-	}
-	else if (params[1].empty()) {
-		messageHandle(ERR_NOTEXTTOSEND, client, "PRIVMSG", params);
-		logMessage(ERROR, "PRIVMSG", "No text to send");
-	}
-
-	bool isChannel = false;
-	std::string target = params[0];
-	Client *targetClient;
-	Channel *targetChannel;
-	if (target[0] == '#') {
-		isChannel = true;
-		//sendTo.erase(0,1);
-		targetChannel = getChannelShahnaj(target); // check the method
-		if (targetChannel == nullptr) {
-			//messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "Channel: \"" + target + "\" does not exist");
-			return ;
-		}
-		else if (!isClientChannelMember(targetChannel, client)) {
-			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "Client is not a member of channel: \"" + target + "\"");
-			return ;
-		}
-		logMessage(DEBUG, "PRIVMSG", "End of channel");
-	}
-	else {
-		targetClient = getClient(target);
-		if (targetClient == nullptr || (targetClient && !targetClient->isAuthenticated())) {
-			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "No such nickname: \"" + target + "\"");
-			return ;
-		}
-		logMessage(DEBUG, "PRIVMSG", "End of client");
-	}
-	std::string msgToSend;
-	if (params[1].length() > MAX_MSG_LEN) {
-		msgToSend = params[1].substr(0, MAX_MSG_LEN);
-	}
-	else
-		msgToSend = params[1];
-	logMessage(DEBUG, "PRIVMSG", "MSG: " + msgToSend);
-	if (isChannel) {
-		logMessage(DEBUG, "PRIVMSG", "Sending Channel Msg");
-		messageBroadcast(*targetChannel, client, "PRIVMSG", msgToSend);
-	}
-	else {
-		logMessage(DEBUG, "PRIVMSG", "Sending msg to client");
-		logMessage(DEBUG, "PRIVMSG", "MSG: " + msgToSend);
-		messageToClient(*targetClient, client, "PRIVMSG", msgToSend);
-	//	std::string finalMsg = client.getClientIdentifier() + " PRIVMSG " + targetClient->getNickname() + " " + msgToSend + "\r\n";
-
-	}
-}
-
 int Server::handleInviteParams(Client& client, const std::vector<std::string>& params) {
 	if (params.empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "INVITE", params);
@@ -761,7 +491,9 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
 	}
 	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
+
 	messageHandle(RPL_INVITING, client, channelInvitedTo, params);
+	messageToClient(*clientToBeInvited, client, "INVITE", channelInvitedTo);
     logMessage(INFO, "INVITE", "User " + client.getNickname() + " inviting " + userToBeInvited + " to " + channelInvitedTo);
 }
 
@@ -817,21 +549,4 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 	messageHandle(RPL_TOPIC, client, channel, {"", targetChannel->getTopic()});
 	messageBroadcast(*targetChannel, client, "TOPIC", params[1]);
 	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
-}
-
-void Server::handleWhois(Client& client, const std::vector<std::string>& params) {
-	//(void)client;
-	(void)this;
-	std::cout << "WHOIS: Client ID: " << client.getClientFD()  << std::endl;
-	for (const std::string& param : params) {
-		std::cout << "- " << param << std::endl;
-	}
-	if (params[0].empty()) {
-		messageHandle(ERR_NONICKNAMEGIVEN, client, "WHOIS", params);
-	}
-	if (getClient(params[0]) == nullptr) {
-		messageHandle(ERR_NOSUCHNICK, client, "WHOIS", params);
-	}
-	messageHandle(RPL_ENDOFWHOIS, client, "WHOIS", {" :End of /WHOIS list"});
-	//messageHandle(RPL_WHOISUSER, client, "WHOIS", params); // {client.getNickname() + " " + client.getUsername() + " " + client.getHostname() + " * :" + client.getRealName()}
 }

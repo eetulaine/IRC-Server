@@ -4,7 +4,7 @@
 
 volatile sig_atomic_t Server::isRunning_ = true; // change the value to true when it start
 
-Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1) {
+Server::Server(int port, std::string password) : port_(port), password_(password), serverSocket_(-1), epollFd(-1) {
 	initAddrInfo();
 	createAddrInfo();
 	createServSocket();
@@ -12,10 +12,6 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	setSocketOption();
 	bindSocket();
 	initListen();
-	// std::cout << GREEN "\n=== SERVER CREATED ===\n" END_COLOR;
-	// std::cout << "Port: " << port_ << "\n";
-	// std::cout << "Pass: " << password_ << "\n";
-	//  std::cout << "Sock: " << serverSocket_ << "\n\n";
 
 	logMessage(INFO, "SERVER", "Server created. PORT[" + std::to_string(port_) + "] PASSWORD[" + password_ + "]");
 	customSignals(true);
@@ -23,18 +19,37 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 }
 
 Server::~Server() {
-	if (serverSocket_ >= 0)
-		close(serverSocket_);
-	if (res_)
-		freeaddrinfo(res_);
+	if (isRunning_)
+		closeServer();
 }
 
-void Server::closeServer(int epollFD) {
+void Server::closeServer() {
 	logMessage(INFO, "SERVER", "Server closing [closeServer()]");
-	if (epollFD)
-		close(epollFD);
+
+	auto it = clients_.begin();
+	while (it != clients_.end()) {
+		if (it->second) {
+			closeClient(*it->second);
+			it = clients_.erase(it);
+		} else {
+			++it;
+		}
+	}
+	clients_.clear();
+	for (auto& [channelName, channel] : channelMap_) {
+		if (channel)
+			delete channel;
+	}
+	channelMap_.clear();
+	if (epollFd >= 0)
+		close(epollFd);
 	if (serverSocket_ >= 0)
 		close(serverSocket_);
+	if (res_ != nullptr) {
+		freeaddrinfo(res_);
+		res_ = nullptr;
+	}
+	commands.clear();
 	password_.clear();
 	customSignals(false);
 	isRunning_ = false;
@@ -93,7 +108,7 @@ void Server::stop(int signum) {
 
 void Server::startServer() {
 	logMessage(INFO, "SERVER", "Server started. SOCKET[" + std::to_string(serverSocket_) + "]");
-	int epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
+	epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
 
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
@@ -114,7 +129,7 @@ void Server::startServer() {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
 		if (!isRunning_)
-			closeServer(epollFd);
+			closeServer();
 		if (epActiveSockets < 0) {
 			throw std::runtime_error("Epoll waiting failed");
 		}
@@ -130,7 +145,6 @@ void Server::startServer() {
 				else if (epEventList[i].events & EPOLLOUT) {
 					sendData(epEventList[i].data.fd);
 				}
-				//usleep(10000); // use for debugging -remove later***
 			}
 		}
 	}
@@ -144,6 +158,7 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 	iss >> cmd;
 	std::string token;
 	while (iss >> token) {
+
 		if (!token.empty() && token[0] == ':') { //check for ':' to indicate the last argument
 			std::string lastParam;
 			std::getline(iss, lastParam);
@@ -155,12 +170,12 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 	return {cmd, params};
 }
 
-
 void Server::processBuffer(Client& client) {
 	std::string buf = client.getReadBuffer();
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
+		logMessage(DEBUG, "PRINT", "BUFFER: " + buf);
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
@@ -170,10 +185,14 @@ void Server::processBuffer(Client& client) {
 		logMessage(DEBUG, "COMMAND", "C[" + commandStr + "]");
 		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
 			return handleQuit(client, params);
-		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated())
+		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated()) {
 			messageHandle(ERR_ALREADYREGISTERED, client, commandStr, params);
-		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated())
+			continue;
+		}
+		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated()) {
 			messageHandle(ERR_NOTREGISTERED, client, commandStr, params);
+			continue;
+		}
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
 			logMessage(WARNING, "COMMAND", "Unknown command: [" + commandStr + "]" + std::to_string(client.getClientFD()));
@@ -290,9 +309,6 @@ std::string Server::getServerName() const {
 	return (this->serverName_);
 }
 
-///// ....... SHAHNAJ ........./////////
-// Utils methods related to commands. will move them later to specific section accordingly //////
-
 bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2) {
 	std::string str1Lower = str1;
 	std::transform(str1Lower.begin(), str1Lower.end(), str1Lower.begin(),
@@ -312,15 +328,15 @@ bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &st
 
 // **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
 
-bool Server::isUserDuplicate(std::string userName) {
-	for (auto& [fd, client] : this->clients_) {
-		if (client && stringCompCaseIgnore(client->getUsername(), userName))
-		{
-			return (true); // Duplicate found
-		}
-	}
-	return (false);   //  this exits after first client!
-}
+// bool Server::isUserDuplicate(std::string userName) {
+// 	for (auto& [fd, client] : this->clients_) {
+// 		if (client && stringCompCaseIgnore(client->getUsername(), userName))
+// 		{
+// 			return (true); // Duplicate found
+// 		}
+// 	}
+// 	return (false);   //  this exits after first client!
+// }
 
 bool	Server::isNickDuplicate(std::string  nickName) {
 
@@ -333,12 +349,10 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 	return (false);
 }
 
-// cross check with hager about the name and purpose
-Channel* Server::getChannelShahnaj(const std::string& channelName) {
+Channel* Server::getChannel(const std::string& channelName) {
 	auto it = channelMap_.find(channelName);
-	if (it != channelMap_.end()) {
+	if (it != channelMap_.end())
 		return it->second;
-	}
 	return nullptr;
 }
 
@@ -358,13 +372,3 @@ Client* Server::getClient(const std::string& nickName) {
 	}
 	return nullptr;  // not found
 }
-
-// bool Server::isClientChannelMember(Channel *channel, const std::string nickName) {
-// 	const std::set<Client*>& members = channel->getMembers();
-// 	for (Client* member : members) {
-// 		if (member && member->getNickname() == nickName) {
-// 			return true;   // Found a client with this nickname in the channel
-// 		}
-// 	}
-// 	return false; // Not found
-// }

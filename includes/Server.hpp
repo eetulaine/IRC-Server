@@ -2,7 +2,6 @@
 
 #include <string>
 #include <iostream>
-//#include <iomanip>
 #include <algorithm> // transform
 #include <sys/socket.h> //-> needed for socket
 #include <sys/epoll.h>	//-> needed for epoll
@@ -35,6 +34,7 @@ class Server {
 		int			port_;
 		std::string	password_;
 		int			serverSocket_;
+		int			epollFd;
 		static volatile sig_atomic_t isRunning_;
 		struct addrinfo		hints_, *res_;
 		const std::string	serverName_ = "IRCS_SERV";
@@ -63,19 +63,15 @@ class Server {
 		using CommandHandler = std::function<void(Client& client, const std::vector<std::string>& params)>;
 		std::map<std::string, CommandHandler> commands;
 
-
-
-
 	public:
 		Server(int port, std::string password);
 		~Server();
-
 
 		// ServerActivity: activity response loop for running server
 		void		startServer();			//-> The loop, that will keep the server running and do diff actions
 		void		processBuffer(Client& client);
 		void		registerCommands();
-		void		closeServer(int epollFd);
+		void		closeServer();
 		void		closeClient(Client& client);
 
 		int			getPort() const;
@@ -83,26 +79,21 @@ class Server {
 		std::string	getPassword() const;
 		std::string	getServerName() const;
 
-
 		// CLIENT
 		Client* 	getClient(const std::string& nickName);
-
 
 		// CHANNEL
 		bool 		channelExists(const std::string& channelName);
 		Channel*	getChannel(const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
 		void		leaveAllChannels(Client& client);
-
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
-
-		Channel*	getChannelShahnaj(const std::string& channelName);
 		bool		isClientChannelMember(Channel *channel, Client& client);
-		void		printChannelMap();
-
 
 		// COMMAND
+		int			handleNickParams(Client& client, const std::vector<std::string>& params);
 		void		handleNick(Client& client, const std::vector<std::string>& params);
+		int			handleUserParams(Client& client, const std::vector<std::string>& params);
 		void		handleUser(Client& client, const std::vector<std::string>& params);
 		void		handlePass(Client& client, const std::vector<std::string>& params);
 		void		handlePing(Client& client, const std::vector<std::string>& params);
@@ -112,6 +103,7 @@ class Server {
 		void		handleKick(Client& client, const std::vector<std::string>& params);
 		void		handleJoin(Client& client, const std::vector<std::string>& params);
 		int			handleKickParams(Client& client, const std::vector<std::string>& params);
+		int			handlePrivMsgParams(Client& client, const std::vector<std::string>& params);
 		void		handlePrivMsg(Client& client, const std::vector<std::string>& params);
 		void		handleInvite(Client& client, const std::vector<std::string>& params);
 		int			handleInviteParams(Client& client, const std::vector<std::string>& params);
@@ -126,14 +118,16 @@ class Server {
 		void		handleTopic(Client& client, const std::vector<std::string>& params);
 		int			handleTopicParams(Client& client, const std::vector<std::string>& params);
 		void		handleWhois(Client& client, const std::vector<std::string>& params);
-		//void handlePass(Client& client, const std::vector<std::string>& params);
 		void		handleSingleMode(Client &client, Channel &channel, const char &operation, char &modeChar,
 						const std::string &modeParam, const std::vector<std::string>& params);
 		bool 		checkModeParam(const char modeChar, const char operation);
 
+		bool 		checkInvitation(Client &client, Channel &channel);
+		bool		checkChannelLimit(Client &client, Channel &channel);
+
 		/// dependent Methods for commands
 		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);
-		bool		isUserDuplicate(std::string  userName);
+		// bool		isUserDuplicate(std::string  userName);
 		bool		isNickDuplicate(std::string  userName);
 		bool		isNickUserValid(std::string cmd, std::string name);
 

@@ -5,7 +5,7 @@
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(false), userLimit_(CHAN_USER_LIMIT), topic_("") {
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(false), userLimit_(-1), topic_("") {
 
 	if (!key.empty())
 		setChannelKey(key);
@@ -16,6 +16,9 @@ Channel::Channel(Client* client, const std::string &name, const std::string& key
 }
 
 Channel::~Channel() {
+	members_.clear();
+	operators_.clear();
+	topic_.clear();
 	logMessage(WARNING, "CHANNEL", ": Channel destroyed");
 }
 
@@ -96,7 +99,7 @@ bool isValidChannelName(const std::string& name) {
 
 	if (name.empty() || name.size() > 50)
 		return false;
-	if (name[0] != '#' && name[0] != '&')
+	if (name[0] != '#')
 		return false;
 
 	static const std::string inavalidChar = " ,\a:";
@@ -136,17 +139,19 @@ bool Channel::isOperator(Client* client) const {
 	return operators_.find(client) != operators_.end();
 }
 
-bool Channel::checkInvitation(Client &client, Channel &channel) {
-    if (channel.isInviteOnly() && !channel.isClientInvited(&client)) {
-       messageHandle(ERR_INVITEONLYCHAN, client, "JOIN", {channel.getName(),
-		":Cannot join channel (+i) - invite only"});
-		logMessage(WARNING, "CHANNEL",
-		"Client '" + client.getNickname() + "' attempted to join invite-only channel [" +
-		channel.getName() + "] without an invitation.");
+
+/* bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
+
+	if (!channel->isKeyProtected())
+		return true;
+	if (providedKey.empty()) {
+		logMessage(ERROR, "CHANNEL",
+			"Key required: " + client->getNickname() + " failed to join");
 		return false;
 	}
 	return true;
-}
+} */
+
 
 bool Channel::checkChannelLimit(Client &client, Channel &channel) {
     if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
@@ -195,14 +200,6 @@ std::string Channel::getName() const {
 	return this->name_;
 }
 
-Channel* Server::getChannel(const std::string& channelName) {
-	auto it = channelMap_.find(channelName);
-	if (it != channelMap_.end())
-		return it->second;
-	return nullptr;
-
-}
-
 const std::set<Client*>& Channel::getMembers() const {
 	return members_;
 }
@@ -226,4 +223,3 @@ void Channel::setUserLimit(int userLimit) {
 int Channel::getUserLimit() const {
 	return userLimit_;
 }
-

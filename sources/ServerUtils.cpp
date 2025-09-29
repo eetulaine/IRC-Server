@@ -4,14 +4,12 @@
 
 bool Server::isNickUserValid(std::string cmd, std::string name) {
 	if (cmd == "NICK") {
-		std::regex nickName_regex(R"(^([A-Za-z\[\]\\`_^{}|])(?![$:#&~@+%])[-A-Za-z0-9\[\]\\`_^{}|]{0,15}$)");
-		if (std::regex_match(name, nickName_regex) == false)
-			return (true);
+		std::regex nickName_regex(R"(^([A-Za-z\[\]\\`_^{}|])(?![$#&~@+%:])[-A-Za-z0-9\[\]\\`_^{}|]{0,8}$)");
+		return (std::regex_match(name, nickName_regex));
 	}
 	else if (cmd == "USER") {
 		std::regex userName_regex(R"(^[^\s@]{1,10}$)");
-		if (std::regex_match(name, userName_regex) == false)
-			return (true);
+		return (std::regex_match(name, userName_regex));
 	}
 	return (false);
 }
@@ -43,6 +41,9 @@ bool Server::channelExists(const std::string& channelName) {
 void logMessage(logMsgType type, const std::string &action, const std::string &msg) {
 	// to skip the PING log
 	if (msg.find("PING") != std::string::npos || msg.find("PONG") != std::string::npos)
+		return;
+
+	if (type == DEBUG && !DEBUG_MODE)
 		return;
 
 	time_t currentTime = time(nullptr);
