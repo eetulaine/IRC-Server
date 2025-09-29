@@ -97,7 +97,9 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_USERSDONTMATCH){
 		message += cmd + "";         //MODE
 	} else if (code == RPL_CHANNELMODEIS){  //:<server> 324 <nick> <channel> <modes>
-		message += cmd + " " + params[0] + " " + params[1];
+		message += params[0] + " " + params[1];
+	} else if (code == RPL_ENDOFBANLIST) {
+		message += cmd + " :End of channel ban list";
 	} else {
 		message += cmd + " " + paramString; // print all arguments
 	}
