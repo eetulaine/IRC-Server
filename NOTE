@@ -106,3 +106,8 @@ WHOIS: Client ID: 8
 	// for (const std::string& param : params) {
 	// 	std::cout << "- " << param << std::endl;
 	// }
+
+   // std::cout << "PARAM SIZE: " << params.size() << std::endl;
+   // for (const std::string& param : params) {
+   // 	std::cout << "- " << param << std::endl;
+   // }
