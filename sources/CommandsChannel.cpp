@@ -199,6 +199,8 @@ bool Server::checkModeParam(const char modeChar, const char operation) {
 void Server::handleChannelMode(Client& client, Channel &channel, const std::vector<std::string>& params) {
 
 	std::string modeString = params[1];
+	if (modeString == "b")
+		messageHandle(RPL_ENDOFBANLIST, client, channel.getName(), {client.getNickname()});
 	if (modeString.size() < 2 || (modeString[0] != '+' && modeString[0] != '-')) {
 		//messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
 		logMessage(ERROR, "MODE", "Client '" + client.getNickname()

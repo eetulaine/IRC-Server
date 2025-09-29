@@ -15,6 +15,7 @@
 #define RPL_INVITING			341
 #define RPL_NAMREPLY			353
 #define RPL_ENDOFNAMES			366
+#define RPL_ENDOFBANLIST		368 //Signals the end of the ban list
 #define RPL_PONG 				399
 #define RPL_CHANNELMODEIS		324
 
