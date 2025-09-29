@@ -219,4 +219,3 @@ void Channel::setUserLimit(int userLimit) {
 int Channel::getUserLimit() const {
 	return userLimit_;
 }
-
