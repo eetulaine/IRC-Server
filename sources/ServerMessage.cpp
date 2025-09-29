@@ -45,7 +45,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_NOSUCHNICK) {
 		message += paramString + " :No such nick/channel";
 	} else if (code == ERR_CANNOTSENDTOCHAN) {
-		message += paramString + " :Cannot send to channel";
+		message += ":Cannot send to channel";
 	} else if (code == ERR_ERRONEUSNICKNAME) {
 		message += paramString + " :Erroneous nickname";
 	} else if (code == ERR_UNKNOWNCOMMAND) {
@@ -58,6 +58,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += paramString + " :No such server";
 	} else if (code == ERR_NORECIPIENT) {
 		message += ":No recipient given";
+	} else if (code == ERR_NOTEXTTOSEND) {
+		message += ":No text to send";
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
 		message += "Unknown MODE flag";
 	} else if (code == ERR_CHANOPRIVSNEEDED) {

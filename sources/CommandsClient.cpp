@@ -16,7 +16,7 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 	}
 	else if (client.getIsAuthenticated()) {
 		messageHandle(ERR_ALREADYREGISTERED, client, "PASS", params);
-		logMessage(WARNING, "PASS", "Client is alrade registered");
+		logMessage(WARNING, "PASS", "Client is already registered");
 	}
 	else {
 		client.setPassword(params[0]);
@@ -27,7 +27,12 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 
 int Server::handleNickParams(Client& client, const std::vector<std::string>& params) {
 
-	if (params.empty() || params[0].empty()) {
+	if (!client.getIsPassValid()) {
+		messageHandle(ERR_PASSWDMISMATCH, client, "NICK", params);
+		logMessage(ERROR, "NICK", "Password is not set yet" + params[0]);
+		return (FAIL);
+	}
+	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
 		logMessage(ERROR, "NICK", "No nickname given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
@@ -51,11 +56,6 @@ int Server::handleNickParams(Client& client, const std::vector<std::string>& par
 		logMessage(WARNING, "NICK", "Nickname is already in use. Given Nickname: " + params[0]);
 		return (FAIL);
 	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_PASSWDMISMATCH, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Password is not set yet" + params[0]);
-		return (FAIL);
-	}
 	return (SUCCESS);
 }
 
@@ -72,9 +72,9 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 		logMessage(INFO, "NICK", "Nickname changed to " + params[0] + ". Old Nickname: " + client.getNickname());
 		client.setNickname(params[0]);
 	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_ALREADYREGISTERED, client, "NICK", params);
-	}
+	//else if (!client.getIsPassValid()) {
+	//	messageHandle(ERR_ALREADYREGISTERED, client, "NICK", params);
+	//}
 	else {
 		client.setNickname(params[0]);
 		logMessage(INFO, "NICK", "Nickname set to " + client.getNickname());
@@ -87,7 +87,12 @@ void Server::handleNick(Client& client, const std::vector<std::string>& params) 
 
 int Server::handleUserParams(Client& client, const std::vector<std::string>& params) {
 
-	if (params.empty() || params[0].empty()) {
+	if (!client.getIsPassValid()) {
+		messageHandle(ERR_PASSWDMISMATCH, client, "USER", params);
+		logMessage(ERROR, "USER", "Password is not set yet" + params[0]);
+		return (FAIL);
+	}
+	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params); // what code to use??
 		logMessage(ERROR, "USER", "No username given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
@@ -97,14 +102,14 @@ int Server::handleUserParams(Client& client, const std::vector<std::string>& par
 		logMessage(ERROR, "USER", "Not enough parameters. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
+	else if (params[3].empty()) {
+		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
+		logMessage(ERROR, "USER", "Empty realname. Client FD: " + std::to_string(client.getClientFD()));
+		return (FAIL);
+	}
 	else if (!isNickUserValid("USER", params[0])) { // do we need to check real name, host?
 		messageHandle(ERR_ERRONEUSUSER, client, "NICK", params);
 		logMessage(ERROR, "USER", "Invalid username format. Given Username: " + params[0]);
-		return (FAIL);
-	}
-	else if (!client.getIsPassValid()) {
-		messageHandle(ERR_PASSWDMISMATCH, client, "USER", params);
-		logMessage(ERROR, "USER", "Password is not set yet" + params[0]);
 		return (FAIL);
 	}
 	return (SUCCESS);
@@ -119,11 +124,11 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 		client.setUsername("~" + params[0]);
 	else
 		client.setUsername(params[0]);
-	client.setHostname(params[2]);
+	client.setHostname(params[1]);
 	client.setRealName(params[3]);
 	logMessage(INFO, "USER", "Username and details are set. Username: " + client.getUsername());
 	if (client.isAuthenticated()) {
-		messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
+		//messageHandle(RPL_WHOISUSER, client, "WHOIS", params);
 		messageHandle(client, "USER", params);
 		logMessage(INFO, "REGISTRATION", "Client registration is successful. Nickname: " + client.getNickname());
 	}
@@ -131,20 +136,25 @@ void Server::handleUser(Client& client, const std::vector<std::string>& params) 
 
 int Server::handlePrivMsgParams(Client& client, const std::vector<std::string>& params) {
 	if (params.empty()) {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "PRIVMSG", params);
-		logMessage(ERROR, "PRIVMSG", "No parameter provided");
+		messageHandle(ERR_NORECIPIENT, client, "PRIVMSG", params);
+		logMessage(WARNING, "PRIVMSG", "No parameter provided. NICK: " + client.getNickname());
 		return (FAIL);
 	}
 	else if (params[0].empty()) {
 		messageHandle(ERR_NORECIPIENT, client, "PRIVMSG", params);
-		logMessage(ERROR, "PRIVMSG", "No recipient to send msg");
+		logMessage(WARNING, "PRIVMSG", "No recipient to send msg. NICK: " + client.getNickname());
 		return (FAIL);
 	}
 	else if (params[1].empty()) {
 		messageHandle(ERR_NOTEXTTOSEND, client, "PRIVMSG", params);
-		logMessage(ERROR, "PRIVMSG", "No text to send");
+		logMessage(WARNING, "PRIVMSG", "No text to send. NICK: " + client.getNickname());
 		return (FAIL);
 	}
+
+	//for (const std::string& param : params) {
+	//	std::cout << "PARAM: " << param << std::endl;
+	//}
+
 	return (SUCCESS);
 }
 
@@ -160,25 +170,20 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	if (target[0] == '#') {
 		isChannel = true;
 		targetChannel = getChannelShahnaj(target); // check the method
-		if (targetChannel == nullptr) {
-			logMessage(ERROR, "PRIVMSG", "Channel: \"" + target + "\" does not exist");
-			return ;
-		}
-		else if (!isClientChannelMember(targetChannel, client)) {
+
+		if (targetChannel == nullptr || (targetChannel && !isClientChannelMember(targetChannel, client))) {
 			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "Client is not a member of channel: \"" + target + "\"");
+			logMessage(WARNING, "PRIVMSG", "No Channel/ client is not a member of channel: \"" + target + "\"");
 			return ;
 		}
-		logMessage(DEBUG, "PRIVMSG", "End of channel");
 	}
 	else {
 		targetClient = getClient(target);
 		if (targetClient == nullptr || (targetClient && !targetClient->isAuthenticated())) {
 			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", params);
-			logMessage(ERROR, "PRIVMSG", "No such nickname: \"" + target + "\"");
+			logMessage(WARNING, "PRIVMSG", "No such nickname: \"" + target + "\"");
 			return ;
 		}
-		logMessage(DEBUG, "PRIVMSG", "End of client");
 	}
 	std::string msgToSend;
 	if (params[1].length() > MAX_MSG_LEN) {
@@ -187,12 +192,21 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	else
 		msgToSend = params[1];
 
+	if (msgToSend[0] == ':') {
+		msgToSend.erase(0, 1);
+		if (msgToSend.empty()) {
+			messageHandle(ERR_NOTEXTTOSEND, client, "PRIVMSG", params);
+			logMessage(WARNING, "PRIVMSG", "No text to send");
+			return;
+		}
+	}
+
 	if (isChannel) {
 		messageBroadcast(*targetChannel, client, "PRIVMSG", msgToSend);
-		logMessage(DEBUG, "PRIVMSG", "Sending Channel Msg to channel: " + targetChannel->getName());
+		logMessage(INFO, "PRIVMSG", "Sending msg to Channel: " + targetChannel->getName());
 	}
 	else {
-		logMessage(DEBUG, "PRIVMSG", "Sending Channel Msg to client:" + targetClient->getNickname());
 		messageToClient(*targetClient, client, "PRIVMSG", msgToSend);
+		logMessage(INFO, "PRIVMSG", "Sending Msg to client: " + targetClient->getNickname());
 	}
 }

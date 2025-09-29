@@ -149,7 +149,6 @@ void Server::startServer() {
 				else if (epEventList[i].events & EPOLLOUT) {
 					sendData(epEventList[i].data.fd);
 				}
-				//usleep(10000); // use for debugging -remove later***
 			}
 		}
 	}
@@ -163,6 +162,7 @@ std::pair<std::string, std::vector<std::string>> Server::parseCommand(const std:
 	iss >> cmd;
 	std::string token;
 	while (iss >> token) {
+
 		if (!token.empty() && token[0] == ':') { //check for ':' to indicate the last argument
 			std::string lastParam;
 			std::getline(iss, lastParam);
@@ -180,6 +180,7 @@ void Server::processBuffer(Client& client) {
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
+		std::cout << "BUFFER: " << buf << std::endl; // remove
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
@@ -189,20 +190,24 @@ void Server::processBuffer(Client& client) {
 		logMessage(DEBUG, "COMMAND", "C[" + commandStr + "]");
 		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
 			return handleQuit(client, params);
-		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated())
+		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated()) {
 			messageHandle(ERR_ALREADYREGISTERED, client, commandStr, params);
-		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated())
+			continue;
+		}
+		if ((commandStr != "NICK" && commandStr != "USER" && commandStr != "PASS" && commandStr != "CAP") && !client.isAuthenticated()) {
 			messageHandle(ERR_NOTREGISTERED, client, commandStr, params);
+			continue;
+		}
 		auto it = commands.find(commandStr);
 		if (it == commands.end()) {
 			logMessage(WARNING, "COMMAND", "Unknown command: [" + commandStr + "]" + std::to_string(client.getClientFD()));
 			messageHandle(ERR_UNKNOWNCOMMAND, client, commandStr, params);
 			continue;
 		}
-		std::cout << "PARAM SIZE: " << params.size() << std::endl;
-		for (const std::string& param : params) {
-			std::cout << "- " << param << std::endl;
-		}
+		// std::cout << "PARAM SIZE: " << params.size() << std::endl;
+		// for (const std::string& param : params) {
+		// 	std::cout << "- " << param << std::endl;
+		// }
 		it->second(client, params);
 	}
 	client.setBuffer(buf);
@@ -357,7 +362,7 @@ bool	Server::isNickDuplicate(std::string  nickName) {
 }
 
 // cross check with hager about the name and purpose
-Channel* Server::getChannelShahnaj(const std::string& channelName) {
+Channel* Server::getChannelShahnaj(const std::string& channelName) { // check the name
 	auto it = channelMap_.find(channelName);
 	if (it != channelMap_.end()) {
 		return it->second;

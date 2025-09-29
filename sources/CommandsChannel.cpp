@@ -29,8 +29,7 @@ bool checkChannelName(Client &client, const std::string& name) {
 	if (isValidChannelName(name))
 		return true;
 	logMessage(ERROR, "JOIN",
-	"Client '" + client.getNickname() + "' attempted to join with invalid channel name '" + name +
-	"'. Channel names must start with '#' or '&' and contain only valid characters.");
+	"Client " + client.getNickname() + " attempted to join with invalid channel. Name: " + name);
 	return false;
 }
 
@@ -61,7 +60,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		const std::string& channelKey = (i < providedKeys.size()) ? providedKeys[i] : "";
 
 		if (!checkChannelName(client, channelName)) {
-			continue;
+			continue; // should we continue
 		}
 		if (client.isInChannel(channelName)) {
 			logMessage(WARNING, "JOIN", "Client '" + client.getNickname() + "' attempted to re-join channel '"
@@ -119,7 +118,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 	}
 	Channel *channel;
 	std::string target = params[0];
-	if (target[0] != '#' && target[0] != '&') {
+	if (target[0] != '#') {
 		Client* targetClient = getClient(target);
 		if (targetClient) {
 			if (targetClient->getNickname() != client.getNickname()) {
