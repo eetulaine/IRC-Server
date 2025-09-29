@@ -63,13 +63,9 @@ class Server {
 		using CommandHandler = std::function<void(Client& client, const std::vector<std::string>& params)>;
 		std::map<std::string, CommandHandler> commands;
 
-
-
-
 	public:
 		Server(int port, std::string password);
 		~Server();
-
 
 		// ServerActivity: activity response loop for running server
 		void		startServer();			//-> The loop, that will keep the server running and do diff actions
@@ -83,19 +79,15 @@ class Server {
 		std::string	getPassword() const;
 		std::string	getServerName() const;
 
-
 		// CLIENT
 		Client* 	getClient(const std::string& nickName);
-
 
 		// CHANNEL
 		bool 		channelExists(const std::string& channelName);
 		Channel*	getChannel(const std::string& channelName);
 		Channel*	createChannel(Client* client, const std::string& channelName, const std::string& channelKey);
 		void		leaveAllChannels(Client& client);
-
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
-
 		bool		isClientChannelMember(Channel *channel, Client& client);
 
 		// COMMAND
@@ -130,7 +122,8 @@ class Server {
 						const std::string &modeParam, const std::vector<std::string>& params);
 		bool 		checkModeParam(const char modeChar, const char operation);
 
-		bool 		CheckInvitation(Client &client, Channel &channel);
+		bool 		checkInvitation(Client &client, Channel &channel);
+		bool		checkChannelLimit(Client &client, Channel &channel);
 
 		/// dependent Methods for commands
 		bool		stringCompCaseIgnore(const std::string &str1, const std::string &str2);

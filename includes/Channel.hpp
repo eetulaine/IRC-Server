@@ -17,7 +17,7 @@ class Channel {
 		bool keyProtected_;
 		bool inviteOnly_;				// channel is invite only
 		bool topicOperatorOnly_;		// if only operator can change channel topic
-		int userLimit_;					// user limit, modifiable by mode -l
+		int userLimit_;					// user limit, modifiable by mode -l, default is -1
 
 		std::string topic_;				// channel topic
 		std::set<Client*> members_;     // pointer to store clients
