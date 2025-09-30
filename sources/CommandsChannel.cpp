@@ -172,8 +172,8 @@ void Server::handleSingleMode(Client &client, Channel &channel, const char &oper
 			channelKeyMode(client, channel, operation, modeParam);
 			break;
 		case 'o':
-			operatorMode(client, channel, operation, modeParam);   // /MODE #channel user +/- o 
-			break;													// /MODE #channel +k pass
+			operatorMode(client, channel, operation, modeParam); 
+			break;											
 		case 'l':
 			userLimitMode(client, channel, operation, modeParam);
 			break;
