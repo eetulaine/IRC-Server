@@ -34,7 +34,7 @@ bool checkChannelName(Client &client, const std::string& name) {
 }
 
 bool Server::checkChannelLimit(Client &client, Channel &channel) {
-	if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
+	if ((static_cast<int>(channel.getMembers().size()) < channel.getUserLimit()) || channel.getUserLimit() < 0)
 		return true;
 	messageHandle(ERR_CHANNELISFULL, client, channel.getName(), {});
 	logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
@@ -94,7 +94,6 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		if (channel->getTopic() != "") {
 			messageHandle(RPL_TOPIC, client, "JOIN", {channel->getName() + " :" + channel->getTopic()});
 		}
-
 		std::string replyMsg2 = "= " + channel->getName() + " :";
 		const std::set<Client*>& members = channel->getMembers();
 		for (Client* member : members) {
@@ -488,12 +487,12 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		messageHandle(ERR_NOSUCHNICK, client, "INVITE", params);
 		return logMessage(ERROR, "INVITE", "User " + userToBeInvited + " does not exist");
 	}
-	if (clientToBeInvited == &client) { // user can't invite themselves
-		return logMessage(WARNING, "INVITE", "User " + client.getNickname() + " attempted to invite themselves to channel " + channelInvitedTo);
-	}
 	if (targetChannel->isMember(clientToBeInvited)) { // user to be invited already a member of the channel
 		messageHandle(ERR_USERONCHANNEL, client, channelInvitedTo, params);
 		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " already on channel " + channelInvitedTo);
+	}
+	if (clientToBeInvited == &client) { // user can't invite themselves
+		return logMessage(WARNING, "INVITE", "User " + client.getNickname() + " attempted to invite themselves to channel " + channelInvitedTo);
 	}
 	targetChannel->addInvite(clientToBeInvited); // add client to the invited_ list for the channel
 
@@ -531,7 +530,7 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 		return logMessage(WARNING, "TOPIC", "No topic set for channel " + channel);
 	}
 	else if (!topicGiven) { // if topic not given as argument and topic is already set for channel, print the topic
-		messageHandle(RPL_TOPIC, client, channel, {"", targetChannel->getTopic()});
+		messageHandle(RPL_TOPIC, client, "JOIN", {targetChannel->getName() + " :" + targetChannel->getTopic()});
 		return logMessage(DEBUG, "TOPIC", targetChannel->getTopic());
 	}
 	const std::set<Client*>& members = targetChannel->getMembers();
@@ -539,10 +538,14 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 		messageHandle(ERR_NOTONCHANNEL, client, channel, params);
 		return logMessage(ERROR, "TOPIC", "User " + client.getNickname() + " not on channel " + channel);
 	}
+	std::string topic = params[1];
+	if (topicGiven && topic.size() > 300) { // truncate overlong topic
+		topic.resize(300);
+	}
 	if (topicGiven && !targetChannel->isTopicOperatorOnly()) { // if topic is given and the mode +t has not been set we can set the topic
-		targetChannel->setTopic(params[1]);
-		messageBroadcast(*targetChannel, client, "TOPIC", params[1]);
-		return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
+		targetChannel->setTopic(topic);
+		messageBroadcast(*targetChannel, client, "TOPIC", topic);
+		return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + topic + " for channel " + channel);
 	}
 	else if (topicGiven && targetChannel->isTopicOperatorOnly()) { // if topic can be set by operators only (mode +t), either set the topic if user is operator or print error
 		if (!targetChannel->isOperator(&client)) {
@@ -550,8 +553,8 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 			return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
 		}
 	}
-	targetChannel->setTopic(params[1]);
-	messageHandle(RPL_TOPIC, client, channel, {"", targetChannel->getTopic()});
-	messageBroadcast(*targetChannel, client, "TOPIC", params[1]);
-	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + params[1] + " for channel " + channel);
+	targetChannel->setTopic(topic);
+	messageHandle(RPL_TOPIC, client, "JOIN", {targetChannel->getName() + " :" + targetChannel->getTopic()});
+	messageBroadcast(*targetChannel, client, "TOPIC", topic);
+	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + topic + " for channel " + channel);
 }
