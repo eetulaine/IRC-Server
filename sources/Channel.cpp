@@ -156,7 +156,7 @@ bool Channel::isOperator(Client* client) const {
 bool Channel::checkChannelLimit(Client &client, Channel &channel) {
     if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
         return true;
-   	messageHandle(ERR_CHANNELISFULL, client, "JOIN", {channel.getName(), std::to_string(channel.getUserLimit())});
+   	//messageHandle(ERR_CHANNELISFULL, client, "JOIN", {channel.getName(), std::to_string(channel.getUserLimit())});
     logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
 	"' attempted to join channel '" + channel.getName() + 
     "', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");

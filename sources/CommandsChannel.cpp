@@ -137,7 +137,6 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 	}
 	channel = getChannel(target);
 	if (!channel) {
-		//messageHandle(ERR_USERSDONTMATCH, client, params);
 		logMessage(ERROR, "MODE", "Client '" + client.getNickname()
 			+ "' attempted MODE on non-existent channel [" + target + "].");
 		return;
@@ -173,24 +172,23 @@ void Server::handleSingleMode(Client &client, Channel &channel, const char &oper
 			channelKeyMode(client, channel, operation, modeParam);
 			break;
 		case 'o':
-			operatorMode(client, channel, operation, modeParam);
-			break;
+			operatorMode(client, channel, operation, modeParam);   // /MODE #channel user +/- o 
+			break;													// /MODE #channel +k pass
 		case 'l':
 			userLimitMode(client, channel, operation, modeParam);
 			break;
 		default:
 			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
 			logMessage(WARNING, "MODE", "Client " + client.getNickname()
-				+ " sent unknown mode character '" + modeChar + "' on channel " + channel.getName() + ".");
+				+ " sent unknown mode character  '" + modeChar + "' on channel " + channel.getName() + ".");
 			break;
 		}
 }
 
 bool Server::checkModeParam(const char modeChar, const char operation) {
 
-	if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l') && operation == '+')
-		return true;
-	else if (modeChar == 'o' && operation == '-')
+	if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l' || modeChar == 'o') 
+		&& operation == '+')
 		return true;
 	return false;
 }
@@ -214,8 +212,8 @@ void Server::handleChannelMode(Client& client, Channel &channel, const std::vect
 
 		if (checkModeParam(modeChar, operation)) {
 			if (paramIndex >= params.size()) {
-				//messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
-				logMessage(ERROR, "MODE", "Client '" + client.getNickname()
+				messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);          
+				logMessage(ERROR, "MODE", "Client '" + client.getNickname()				
 				+ "' sent MODE command with insufficient parameters for mode character "
 				+ modeChar + ".");
 				return;
@@ -228,7 +226,7 @@ void Server::handleChannelMode(Client& client, Channel &channel, const std::vect
 
 void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	if (!channel.isOperator(&client)) {
-		//messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"});
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"});
 		logMessage(WARNING, "MODE", "Client '" + client.getNickname() + "' attempted to change +i on '"
 		+ channel.getName() + "' without operator privileges.");
 		return;
@@ -237,22 +235,19 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 		if (!channel.isInviteOnly()) {
 			channel.setInviteOnly(true);
 			messageBroadcast(channel, client, "MODE", "+i");
-			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+i", ":Invite-only mode enabled"});
 			logMessage(INFO, "MODE", "Invite-only mode enabled on channel [" + channel.getName() + "] by client '"
 			+ client.getNickname() + "'");
 		} else {
-			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+i", ":Invite-only mode already enabled"});
+
 			logMessage(DEBUG, "MODE", "Invite-only mode already active on '" + channel.getName() + "'");
 		}
 	} else if (operation == '-') {
 		if (channel.isInviteOnly()) {
 			channel.setInviteOnly(false);
 			messageBroadcast(channel, client, "MODE", channel.getName() + " -i");
-			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "-i", ":Invite-only mode disabled"});
 			logMessage(INFO, "MODE", "Client '" + client.getNickname() + "' disabled invite-only mode on channel '"
 			+ channel.getName() + "'");
 		} else {
-			//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "-i", ":Invite-only mode is not set"});
 			logMessage(DEBUG, "MODE", "Invite-only mode already disabled on '" + channel.getName() + "'");
 		}
 	}
@@ -324,7 +319,7 @@ void Server::channelKeyMode(Client& client, Channel& channel, char operation, co
 	}
 	channel.setChannelKey(key);
 	messageBroadcast(channel, client, "MODE", channel.getName() + " +k");
-	/*messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+k", ":Channel key set"});*/
+	//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+k", ":Channel key set"});
 	logMessage(INFO, "MODE", "+k set on " + channel.getName());
     } else if (operation == '-') {
 		channel.setChannelKey("");
