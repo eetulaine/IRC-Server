@@ -92,7 +92,7 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
 	if (!params.empty())
 		reason = params[0];
 	// BROADCAST the quitMessage to all the channels the client quitting is a member of
-	 for (const std::string& channelName : client.getJoinedChannels()) {
+	for (const std::string& channelName : client.getJoinedChannels()) {
         Channel* channel = getChannel(channelName);
         if (channel) {
             messageBroadcast(*channel, client, "QUIT", " :" + reason); // use other method
