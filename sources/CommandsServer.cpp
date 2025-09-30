@@ -84,8 +84,10 @@ void Server::handlePing(Client& client, const std::vector<std::string>& params) 
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-    if (!client.isConnected() || !client.isAuthenticated()) //no broadcasting from unconnected or unregistered clients
+    if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
+		logMessage(INFO, "QUIT", "Closed unauthenticated/unresponsive client " + client.getNickname());
 		return closeClient(client);
+	}
 	std::string reason = "Client quit";
 	if (!params.empty())
 		reason = params[0];
@@ -96,9 +98,9 @@ void Server::handleQuit(Client& client, const std::vector<std::string>& params) 
             messageBroadcast(*channel, client, "QUIT", " :" + reason); // use other method
         }
     }
-	//client.appendSendBuffer(quitMessage);
 	logMessage(INFO, "QUIT", "User " + client.getNickname() + " quit (reason: " + reason + ")");
 	closeClient(client);
+	logMessage(DEBUG, "QUIT", "Server still alive after closing client");
 }
 
 void Server::closeClient(Client& client) {
@@ -111,7 +113,7 @@ void Server::closeClient(Client& client) {
     ev.events = EPOLLIN;
     ev.data.fd = clientfd;
 	epoll_ctl(epollfd, EPOLL_CTL_DEL, clientfd, &ev);
-	close(clientfd);
+	clients_.erase(clientfd);
 }
 
 void Server::handleWhois(Client& client, const std::vector<std::string>& params) {

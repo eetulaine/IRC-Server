@@ -85,7 +85,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_ERRONEUSUSER) {
 		message += paramString + " :Erroneous format";
 	} else if (code == RPL_TOPIC) {
-		message += cmd + " :" + params[1];
+		message += paramString;
 	} else if (code == RPL_NOTOPIC) {
 		message += cmd + " :No topic is set";
 	} else if (code == RPL_NAMREPLY) {
