@@ -25,7 +25,7 @@ bool Server::checkInvitation(Client &client, Channel &channel) {
 	return true;
 }
 
-bool checkChannelName(Client &client, const std::string& name) {
+bool Server::checkChannelName(Client &client, const std::string& name) {
 	if (isValidChannelName(name))
 		return true;
 	logMessage(ERROR, "JOIN",
@@ -73,6 +73,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 			if (!checkInvitation(client, *channel))
 				continue;
 			if (!channel->checkKey(channel, &client, channelKey)) {
+				messageHandle(ERR_BADCHANNELKEY, client, "JOIN", {channel->getName(), " :Bad channel key"});
 				continue;
 			}
 			if (!channel->checkChannelLimit(client, *channel)) {
@@ -318,12 +319,12 @@ void Server::channelKeyMode(Client& client, Channel& channel, char operation, co
 		return;
 	}
 	channel.setChannelKey(key);
-	messageBroadcast(channel, client, "MODE", channel.getName() + " +k");
+	messageBroadcast(channel, client, "MODE", "+k " + key);
 	//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+k", ":Channel key set"});
 	logMessage(INFO, "MODE", "+k set on " + channel.getName());
     } else if (operation == '-') {
 		channel.setChannelKey("");
-		messageBroadcast(channel, client, "MODE", channel.getName() + " -k");
+		messageBroadcast(channel, client, "MODE", "+k " + key);
 		/*messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "-k", ":Channel key removed"});*/
 		logMessage(INFO, "MODE", "+k removed from " + channel.getName());
 	}

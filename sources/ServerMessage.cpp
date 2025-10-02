@@ -63,7 +63,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
 		message += "Unknown MODE flag";
 	} else if (code == ERR_CHANOPRIVSNEEDED) {
-		message += cmd + " :You're not channel operator";
+		message += paramString;
 	} else if (code == ERR_NOSUCHCHANNEL) {
 		message += cmd + " :No such channel";
 	} else if (code == ERR_NOTONCHANNEL) {
@@ -100,7 +100,9 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += params[0] + " " + params[1];
 	} else if (code == RPL_ENDOFBANLIST) {
 		message += cmd + " :End of channel ban list";
-	} else {
+	} else if (code == ERR_BADCHANNELKEY) {
+        message += paramString;
+    } else {
 		message += cmd + " " + paramString; // print all arguments
 	}
 	message += "\r\n";

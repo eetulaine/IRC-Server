@@ -5,10 +5,12 @@
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(false), userLimit_(-1), topic_("") {
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(false), userLimit_(100), topic_("") {
 
-	if (!key.empty())
+	if (!key.empty()) {
 		setChannelKey(key);
+		keyProtected_ = true;
+	}
 	logMessage(INFO, "CHANNEL", "New channel created. Name: ["+ this->getName() + "].");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
@@ -183,9 +185,7 @@ void Channel::setTopicOperatorOnly(bool topicOperatorOnly) {
 
 // ACCESSORS
 void Channel::setChannelKey(const std::string& key) {
-
 	key_ = key;
-	keyProtected_ = !key.empty();
 }
 
 void Channel::setInviteOnly(bool inviteOnly) {
