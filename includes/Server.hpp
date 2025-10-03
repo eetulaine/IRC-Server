@@ -89,6 +89,7 @@ class Server {
 		void		leaveAllChannels(Client& client);
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
 		bool		isClientChannelMember(Channel *channel, Client& client);
+		bool 		checkChannelName(Client &client, const std::string& name);
 
 		// COMMAND
 		int			handleNickParams(Client& client, const std::vector<std::string>& params);
