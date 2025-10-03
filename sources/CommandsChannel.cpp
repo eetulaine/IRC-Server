@@ -25,7 +25,7 @@ bool Server::checkInvitation(Client &client, Channel &channel) {
 	return true;
 }
 
-bool checkChannelName(Client &client, const std::string& name) {
+bool Server::checkChannelName(Client &client, const std::string& name) {
 	if (isValidChannelName(name))
 		return true;
 	logMessage(ERROR, "JOIN",
@@ -73,13 +73,18 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 			if (!checkInvitation(client, *channel))
 				continue;
 			if (!channel->checkKey(channel, &client, channelKey)) {
+				messageHandle(ERR_BADCHANNELKEY, client, "JOIN", {channel->getName(), " :Bad channel key"});  // ✅
 				continue;
 			}
-			if (!channel->checkChannelLimit(client, *channel)) {
+			if (!checkChannelLimit(client, *channel)) {
 				continue;
 			}
 		}
 		else {
+			if (channelMap_.size() >= MAX_CHAN_TOTAL) {
+				messageHandle(ERR_TOOMANYCHANNELS, client, "JOIN", {channelName, " :Channels limit reached"});
+				return;
+			}
 			channel = createChannel(&client, channelName, channelKey);
 			if (!channel) {
 				logMessage(ERROR, "CHANNEL", "Failed to create channel: '" + channelName + "'.");
@@ -182,7 +187,7 @@ void Server::handleSingleMode(Client &client, Channel &channel, const char &oper
 			userLimitMode(client, channel, operation, modeParam);
 			break;
 		default:
-			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);  // ✅
 			logMessage(WARNING, "MODE", "Client " + client.getNickname()
 				+ " sent unknown mode character  '" + modeChar + "' on channel " + channel.getName() + ".");
 			break;
@@ -230,7 +235,7 @@ void Server::handleChannelMode(Client& client, Channel &channel, const std::vect
 
 void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"});
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"}); //  ✅
 		logMessage(WARNING, "MODE", "Client '" + client.getNickname() + "' attempted to change +i on '"
 		+ channel.getName() + "' without operator privileges.");
 		return;
@@ -238,7 +243,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	if (operation == '+') {
 		if (!channel.isInviteOnly()) {
 			channel.setInviteOnly(true);
-			messageBroadcast(channel, client, "MODE", "+i");
+			messageBroadcast(channel, client, "MODE", "+i");       // ✅
 			logMessage(INFO, "MODE", "Invite-only mode enabled on channel [" + channel.getName() + "] by client '"
 			+ client.getNickname() + "'");
 		} else {
@@ -248,7 +253,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	} else if (operation == '-') {
 		if (channel.isInviteOnly()) {
 			channel.setInviteOnly(false);
-			messageBroadcast(channel, client, "MODE", channel.getName() + " -i");
+			messageBroadcast(channel, client, "MODE", "-i");      // ✅
 			logMessage(INFO, "MODE", "Client '" + client.getNickname() + "' disabled invite-only mode on channel '"
 			+ channel.getName() + "'");
 		} else {
@@ -311,24 +316,22 @@ void Server::operatorMode(Client& client, Channel& channel, char operation, cons
 
 void Server::channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key) {
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"});
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"}); //  ✅
 		logMessage(WARNING, "MODE", "Unauthorized key mode change attempt on " + channel.getName());
 		return;
 	}
 	if (operation == '+') {
 		if (key.empty()) {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", {channel.getName(), "+k", ":Key required for +k mode"});
-		logMessage(WARNING, "MODE", "Missing key in +k mode on " + channel.getName());
+		logMessage(WARNING, "MODE", "Missing key in +k mode on " + channel.getName()); 
 		return;
 	}
 	channel.setChannelKey(key);
-	messageBroadcast(channel, client, "MODE", channel.getName() + " +k");
-	//messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "+k", ":Channel key set"});
+	messageBroadcast(channel, client, "MODE", "+k " + key);  // ✅
 	logMessage(INFO, "MODE", "+k set on " + channel.getName());
     } else if (operation == '-') {
 		channel.setChannelKey("");
-		messageBroadcast(channel, client, "MODE", channel.getName() + " -k");
-		/*messageHandle(RPL_MODECHANGE, client, "MODE", {channel.getName(), "-k", ":Channel key removed"});*/
+		channel.setKeyProtected(false);
+		messageBroadcast(channel, client, "MODE", "-k *");   // ✅
 		logMessage(INFO, "MODE", "+k removed from " + channel.getName());
 	}
 }

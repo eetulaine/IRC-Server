@@ -111,3 +111,10 @@ WHOIS: Client ID: 8
    // for (const std::string& param : params) {
    // 	std::cout << "- " << param << std::endl;
    // }
+
+
+checklist:
+
+- topic auto set when channel is created
+- limit (-1)
+- mode messaageHandle()  "unkown flag"

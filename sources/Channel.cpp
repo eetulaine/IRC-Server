@@ -7,8 +7,11 @@
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
 	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(true), userLimit_(-1), topic_("") {
 
-	if (!key.empty())
+	if (!key.empty()) {
 		setChannelKey(key);
+		keyProtected_ = true;
+	}
+		
 	logMessage(INFO, "CHANNEL", "New channel created. Name: ["+ this->getName() + "].");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
@@ -28,11 +31,13 @@ std::string Channel::getModeString() {
     if (isInviteOnly())
         modes += "i";
     if (isKeyProtected())
-        modes += "t";
+        modes += "k";
     if (getUserLimit() > 0)
-        modes += "l";
+		modes += "l";
+	if (topicOperatorOnly_)
+		modes += "t";
     if (modes == "+")  // No modes active
-        return "";
+		return "";
     return modes;
 }
 
@@ -111,14 +116,14 @@ bool isValidChannelName(const std::string& name) {
 }
 
 bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
+
+	if (!channel->isKeyProtected())
+        return true;
     if (!providedKey.empty() && !isValidChannelKey(providedKey)) {
         logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
 		+ "' provided an invalid channel key format for channel '" + getName() + "'.");
         return false;
     }
-    if (!channel->isKeyProtected())
-        return true;
-
     if (providedKey.empty()) {
         logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
 		+ "' attempted to join key-protected channel '" + getName() + "' without providing a key.");
@@ -156,7 +161,6 @@ bool Channel::isOperator(Client* client) const {
 bool Channel::checkChannelLimit(Client &client, Channel &channel) {
     if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
         return true;
-   	//messageHandle(ERR_CHANNELISFULL, client, "JOIN", {channel.getName(), std::to_string(channel.getUserLimit())});
     logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
 	"' attempted to join channel '" + channel.getName() + 
     "', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");
@@ -183,9 +187,13 @@ void Channel::setTopicOperatorOnly(bool topicOperatorOnly) {
 
 // ACCESSORS
 void Channel::setChannelKey(const std::string& key) {
-
 	key_ = key;
-	keyProtected_ = !key.empty();
+}
+
+void Channel::setKeyProtected(bool keyProtected) {
+	if (keyProtected)
+		keyProtected_ = true;
+	keyProtected_ = false;
 }
 
 void Channel::setInviteOnly(bool inviteOnly) {

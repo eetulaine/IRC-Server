@@ -43,6 +43,7 @@ class Channel {
 
 		// ACCESSORS
 		void setChannelKey(const std::string& key);
+		void setKeyProtected(bool keyProtected);
 		void setOperator(Client* client, bool isOperator);
 		bool isKeyProtected();
 		bool isInviteOnly();
