@@ -31,7 +31,7 @@ class Client {
 
 		// PRIVATE MEMBER FUNCTIONS
 		bool isSocketValid() const;
-		
+
 	public:
 		Client(int clientFD, std::string clientIP, int epollFd);
 		~Client();
@@ -44,6 +44,7 @@ class Client {
 		// ACCESSORS
 		int getClientFD() const;
 		int getEpollFd() const;
+
 		std::string getHostname() const;
 		std::string getNickname() const;
 		std::string getUsername() const;
@@ -51,12 +52,13 @@ class Client {
 		std::string getPassword() const;
 		std::string getReadBuffer() const;
 		std::string getSendBuffer() const;
+		std::string getClientIdentifier() const;
+
 		bool isConnected() const;
 		bool isAuthenticated();
 		bool getIsAuthenticated() const;
 		bool getIsPassValid() const;
-		std::string getClientIdentifier() const;
-		//const std::set<std::string>& getJoinedChannels() const; // for listing all joined channels
+
 
 		void setHostname(std::string hostname);
 		void setNickname(std::string nickname);
@@ -69,6 +71,7 @@ class Client {
 		void setIsPassValid(bool isPassValid);
 		void appendSendBuffer(std::string sendMsg);
 		void epollEventChange(uint32_t eventType); // any better name??
+
 		//------ CHANNEL -------
 		void addToJoinedChannelList(const std::string &channelName);
 		bool isInChannel(const std::string& channelName);
