@@ -1,6 +1,5 @@
 #include "../includes/Server.hpp"
 #include "../includes/macros.hpp"
-//#include "../includes/responseCodes.hpp"
 
 bool Server::isNickUserValid(std::string cmd, std::string name) {
 	if (cmd == "NICK") {
@@ -39,10 +38,10 @@ bool Server::channelExists(const std::string& channelName) {
 }
 
 void logMessage(logMsgType type, const std::string &action, const std::string &msg) {
-	// to skip the PING log
+	// To skip the PING log
 	if (msg.find("PING") != std::string::npos || msg.find("PONG") != std::string::npos)
 		return;
-
+	// To skip/print the Debug log
 	if (type == DEBUG && !DEBUG_MODE)
 		return;
 
