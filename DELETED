@@ -1,4 +1,4 @@
-	CHANNEL::::
+//CHANNEL::::
 
 		//static bool isValidChannelName(const std::string& name);
 		// bool isValidChannelKey(const std::string &key);
@@ -21,7 +21,7 @@
 } */
 
 
-CLIENT:::::
+//CLIENT:::::
 
 		//const std::set<std::string>& getJoinedChannels() const; // for listing all joined channels
 
@@ -39,7 +39,7 @@ CLIENT:::::
 	//std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
 
 
-SERVER::::
+//SERVER::::
 
 
 		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
@@ -67,12 +67,12 @@ ProcessBuffer ****
 // }
 .....
 
-MEssage::::
+//MEssage::::
 
-	std::cout << "SEND MSG: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
+//	std::cout << "SEND MSG: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
 
 
-COMMANDS:
+//COMMANDS:
 
 
 	// std::cout << "PARAM SIZE: " << params.size() << std::endl;
