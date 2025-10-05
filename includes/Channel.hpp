@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "Client.hpp"
+#include "../includes/Client.hpp"
 #include <vector>
 #include <map>
 #include <set>
@@ -28,18 +28,15 @@ class Channel {
 		Channel(Client* client, const std::string &name, const std::string& );
 		~Channel();
 
-
 		//METHODS
 		bool isMember(Client* client);
 		void addChannelMember(Client *client);
 		void addInvite(Client* client);
 		void removeMember(Client *client);
-		//static bool isValidChannelName(const std::string& name);
+
 		bool isOperator(Client* client) const;
 		std::string getModeString();
-		// bool isValidChannelKey(const std::string &key);
-		//void removeOperator(Client* client);
-		//void removeOperator(Client* client);
+
 
 		// ACCESSORS
 		void setChannelKey(const std::string& key);
@@ -50,7 +47,7 @@ class Channel {
 		bool isClientInvited(Client* client) const;
 		void setInviteOnly(bool inviteOnly);
 		std::string getName() const;
-		// std::string getTopic(); // make it const?
+
 		std::string getChannelKey() const;
 		bool checkKey(Channel* channel, Client* client, const std::string& providedKey);
 		const std::set<Client *> &getMembers() const; 			// list all clients in the channel
@@ -58,8 +55,6 @@ class Channel {
 		int getUserLimit() const;
 		void setUserLimit(int userLimit);
 		bool checkChannelLimit(Client &client, Channel &channel);
-		bool checkInvitation(Client &client, Channel &channel);
-		//size_t getOperatorCount() const;
 
 		// CHANNEL TOPIC
 		bool isTopicOperatorOnly() const;
@@ -69,4 +64,3 @@ class Channel {
 };
 bool isValidChannelName(const std::string& name);
 bool isValidChannelKey(const std::string &key);
-

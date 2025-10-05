@@ -90,7 +90,7 @@ int Server::handleUserParams(Client& client, const std::vector<std::string>& par
 		return (FAIL);
 	}
 	else if (params.empty() || params[0].empty()) {
-		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params); // what code to use??
+		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
 		logMessage(ERROR, "USER", "No username given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
@@ -104,7 +104,7 @@ int Server::handleUserParams(Client& client, const std::vector<std::string>& par
 		logMessage(ERROR, "USER", "Empty realname. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
-	else if (!isNickUserValid("USER", params[0])) { // do we need to check real name, host?
+	else if (!isNickUserValid("USER", params[0])) {
 		messageHandle(ERR_ERRONEUSUSER, client, "NICK", params);
 		logMessage(ERROR, "USER", "Invalid username format. Given Username: " + params[0]);
 		return (FAIL);
@@ -161,7 +161,7 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	Channel *targetChannel;
 	if (target[0] == '#') {
 		isChannel = true;
-		targetChannel = getChannel(target); // check the method
+		targetChannel = getChannel(target);
 
 		if (targetChannel == nullptr || (targetChannel && !isClientChannelMember(targetChannel, client))) {
 			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);

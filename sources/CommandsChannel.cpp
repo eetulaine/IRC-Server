@@ -6,8 +6,8 @@ std::vector<std::string> split(const std::string& input, const char delmiter) {
 
 	std::vector<std::string> tokens;
 	std::stringstream ss(input);
-
 	std::string token;
+
 	while (std::getline(ss, token, delmiter)) {
 		tokens.push_back(token);
 	}
@@ -60,7 +60,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		const std::string& channelKey = (i < providedKeys.size()) ? providedKeys[i] : "";
 
 		if (!checkChannelName(client, channelName)) {
-			continue; // should we continue
+			continue;
 		}
 		if (client.isInChannel(channelName)) {
 			logMessage(WARNING, "JOIN", "Client '" + client.getNickname() + "' attempted to re-join channel '"
@@ -73,7 +73,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 			if (!checkInvitation(client, *channel))
 				continue;
 			if (!channel->checkKey(channel, &client, channelKey)) {
-				messageHandle(ERR_BADCHANNELKEY, client, "JOIN", {channel->getName(), " :Bad channel key"});  // ✅
+				messageHandle(ERR_BADCHANNELKEY, client, "JOIN", {channel->getName(), " :Bad channel key"});
 				continue;
 			}
 			if (!checkChannelLimit(client, *channel)) {
@@ -95,7 +95,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 		client.addToJoinedChannelList(channel->getName());
 		logMessage(INFO, "CHANNEL", "Client '" + client.getNickname() + "' joined channel [" + channel->getName() + "]");
 
-		messageBroadcast(*channel, client, "JOIN", ""); // need to set it if  above mehtods have no error
+		messageBroadcast(*channel, client, "JOIN", "");
 		if (channel->getTopic() != "") {
 			messageHandle(RPL_TOPIC, client, "JOIN", {channel->getName() + " :" + channel->getTopic()});
 		}
@@ -106,7 +106,7 @@ void Server::handleJoin(Client& client, const std::vector<std::string>& params) 
 				replyMsg2 += "@";
 			replyMsg2 += member->getNickname() + " ";
 		}
-		messageHandle(RPL_NAMREPLY, client, "JOIN", {replyMsg2}); // what if list is longer then MAX_LEN
+		messageHandle(RPL_NAMREPLY, client, "JOIN", {replyMsg2});
 		messageHandle(RPL_ENDOFNAMES, client, "JOIN", {channel->getName(), " :End of /NAMES list\r\n"});
 	}
 }
@@ -181,13 +181,13 @@ void Server::handleSingleMode(Client &client, Channel &channel, const char &oper
 			channelKeyMode(client, channel, operation, modeParam);
 			break;
 		case 'o':
-			operatorMode(client, channel, operation, modeParam); 
-			break;											
+			operatorMode(client, channel, operation, modeParam);
+			break;
 		case 'l':
 			userLimitMode(client, channel, operation, modeParam);
 			break;
 		default:
-			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);  // ✅
+			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
 			logMessage(WARNING, "MODE", "Client " + client.getNickname()
 				+ " sent unknown mode character  '" + modeChar + "' on channel " + channel.getName() + ".");
 			break;
@@ -196,7 +196,7 @@ void Server::handleSingleMode(Client &client, Channel &channel, const char &oper
 
 bool Server::checkModeParam(const char modeChar, const char operation) {
 
-	if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l' || modeChar == 'o') 
+	if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l' || modeChar == 'o')
 		&& operation == '+')
 		return true;
 	return false;
@@ -221,8 +221,8 @@ void Server::handleChannelMode(Client& client, Channel &channel, const std::vect
 
 		if (checkModeParam(modeChar, operation)) {
 			if (paramIndex >= params.size()) {
-				messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);          
-				logMessage(ERROR, "MODE", "Client '" + client.getNickname()				
+				messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", params);
+				logMessage(ERROR, "MODE", "Client '" + client.getNickname()
 				+ "' sent MODE command with insufficient parameters for mode character "
 				+ modeChar + ".");
 				return;
@@ -275,7 +275,7 @@ void Server::topicRestrictionMode(Client& client, Channel& channel, char operati
 		} else {
 			logMessage(WARNING, "MODE", "Topic is already set as operator-only");
 		}
-	} else if (operation == '-') { // if '-
+	} else if (operation == '-') {
 		if (channel.isTopicOperatorOnly()) {
 			channel.setTopicOperatorOnly(false);
 			logMessage(DEBUG, "MODE", "Topic settable by every channel member");
@@ -316,22 +316,23 @@ void Server::operatorMode(Client& client, Channel& channel, char operation, cons
 
 void Server::channelKeyMode(Client& client, Channel& channel, char operation, const std::string& key) {
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"}); //  ✅
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, "MODE", {channel.getName(), ":You're not a channel operator"});
 		logMessage(WARNING, "MODE", "Unauthorized key mode change attempt on " + channel.getName());
 		return;
 	}
 	if (operation == '+') {
 		if (key.empty()) {
-		logMessage(WARNING, "MODE", "Missing key in +k mode on " + channel.getName()); 
-		return;
+			logMessage(WARNING, "MODE", "Missing key in +k mode on " + channel.getName());
+			return;
+		}
+		channel.setChannelKey(key);
+		messageBroadcast(channel, client, "MODE", "+k " + key);
+		logMessage(INFO, "MODE", "+k set on " + channel.getName());
 	}
-	channel.setChannelKey(key);
-	messageBroadcast(channel, client, "MODE", "+k " + key);  // ✅
-	logMessage(INFO, "MODE", "+k set on " + channel.getName());
-    } else if (operation == '-') {
+	else if (operation == '-') {
 		channel.setChannelKey("");
 		channel.setKeyProtected(false);
-		messageBroadcast(channel, client, "MODE", "-k *");   // ✅
+		messageBroadcast(channel, client, "MODE", "-k *");
 		logMessage(INFO, "MODE", "+k removed from " + channel.getName());
 	}
 }
@@ -461,6 +462,7 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		return;
 	std::string userToBeInvited = params[0];
 	std::string channelInvitedTo = params[1];
+
 	if (!channelExists(channelInvitedTo)) {
 		messageHandle(ERR_NOSUCHCHANNEL, client, channelInvitedTo, params);
 		return logMessage(WARNING, "INVITE", "Channel " + channelInvitedTo + " does not exist");
@@ -496,7 +498,7 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 
 	messageHandle(RPL_INVITING, client, channelInvitedTo, params);
 	messageToClient(*clientToBeInvited, client, "INVITE", channelInvitedTo);
-    logMessage(INFO, "INVITE", "User " + client.getNickname() + " inviting " + userToBeInvited + " to " + channelInvitedTo);
+	logMessage(INFO, "INVITE", "User " + client.getNickname() + " inviting " + userToBeInvited + " to " + channelInvitedTo);
 }
 
 int Server::handleTopicParams(Client& client, const std::vector<std::string>& params) {

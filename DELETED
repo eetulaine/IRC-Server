@@ -1,0 +1,81 @@
+//CHANNEL::::
+
+		//static bool isValidChannelName(const std::string& name);
+		// bool isValidChannelKey(const std::string &key);
+		//void removeOperator(Client* client);
+		//void removeOperator(Client* client);
+		// std::string getTopic(); // make it const?
+		//size_t getOperatorCount() const;
+		 // bool checkInvitation(Client &client, Channel &channel); // already in server cpp
+
+/* bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
+
+	if (!channel->isKeyProtected())
+		return true;
+	if (providedKey.empty()) {
+		logMessage(ERROR, "CHANNEL",
+			"Key required: " + client->getNickname() + " failed to join");
+		return false;
+	}
+	return true;
+} */
+
+
+//CLIENT:::::
+
+		//const std::set<std::string>& getJoinedChannels() const; // for listing all joined channels
+
+
+	//std::cout << GREEN "\n=== CLIENT CREATED ===\n" END_COLOR;
+	//std::cout << "clientFD: " << clientFD_ << "\n";
+	//std::cout << "hostname: " << hostname_ << "\n";
+....
+
+		//std::cout << readBuffer_ << "\n";
+...
+
+	//std::cout << "INSIDE event change: " << sendBuffer_ << "\n";
+
+	//std::cout << "Event created, client fd: " << newEvent.data.fd << "\n";
+
+
+//SERVER::::
+
+
+		// void		manageChannel(Client* client, const std::string& channelName, std::string& channelkey);
+
+		// bool		isUserDuplicate(std::string  userName);
+
+
+ProcessBuffer ****
+ // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
+
+ ........
+	//std::cout << "Client IP from GET Method: " << clientIP << std::endl; // remove later***
+....
+
+// **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
+
+// bool Server::isUserDuplicate(std::string userName) {
+// 	for (auto& [fd, client] : this->clients_) {
+// 		if (client && stringCompCaseIgnore(client->getUsername(), userName))
+// 		{
+// 			return (true); // Duplicate found
+// 		}
+// 	}
+// 	return (false);   //  this exits after first client!
+// }
+.....
+
+//MEssage::::
+
+//	std::cout << "SEND MSG: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
+
+
+//COMMANDS:
+
+
+	// std::cout << "PARAM SIZE: " << params.size() << std::endl;
+	// for (const std::string& param : params) {
+	// 	std::cout << "- " << param << std::endl;
+	// }
