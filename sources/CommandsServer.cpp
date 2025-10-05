@@ -62,11 +62,6 @@ void Server::registerCommands() {
 	commands["WHOIS"] = [this](Client& client, const std::vector<std::string>& params) {
 		handleWhois(client, params);
 	};
-
-	// std::cout << "PARAM SIZE: " << params.size() << std::endl;
-	// for (const std::string& param : params) {
-	// 	std::cout << "- " << param << std::endl;
-	// }
 }
 
 void Server::handlePing(Client& client, const std::vector<std::string>& params) {
@@ -84,7 +79,7 @@ void Server::handlePing(Client& client, const std::vector<std::string>& params) 
 }
 
 void Server::handleQuit(Client& client, const std::vector<std::string>& params) {
-    if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
+	if (!client.isConnected() || !client.isAuthenticated()) {//no broadcasting from unconnected or unregistered clients
 		logMessage(INFO, "QUIT", "Closed unauthenticated/unresponsive client " + client.getNickname());
 		return closeClient(client);
 	}
@@ -104,8 +99,8 @@ void Server::closeClient(Client& client) {
 	leaveAllChannels(client); // remove client from Channel member lists and clear joinedChannels
 	client.setConnected(false);
 	struct epoll_event ev;
-    ev.events = EPOLLIN;
-    ev.data.fd = clientfd;
+	ev.events = EPOLLIN;
+	ev.data.fd = clientfd;
 	epoll_ctl(epollfd, EPOLL_CTL_DEL, clientfd, &ev);
 	clients_.erase(clientfd);
 }
