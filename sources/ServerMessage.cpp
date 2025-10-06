@@ -45,7 +45,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_NOSUCHNICK) {
 		message += paramString + " :No such nick/channel";
 	} else if (code == ERR_CANNOTSENDTOCHAN) {
-		message += ":Cannot send to channel";
+		message += paramString + " :Cannot send to channel";
 	} else if (code == ERR_ERRONEUSNICKNAME) {
 		message += paramString + " :Erroneous nickname";
 	} else if (code == ERR_UNKNOWNCOMMAND) {
