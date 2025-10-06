@@ -545,7 +545,7 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 	if (topicGiven && topic.size() > 300) { // truncate overlong topic
 		topic.resize(300);
 	}
-	if (topicGiven && !targetChannel->isTopicOperatorOnly()) { // if topic is given and the mode +t has not been set we can set the topic
+	if (topicGiven && !targetChannel->isTopicOperatorOnly() && topic != ":") { // if topic is given and the mode +t has not been set we can set the topic
 		targetChannel->setTopic(topic);
 		messageBroadcast(*targetChannel, client, "TOPIC", topic);
 		return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + topic + " for channel " + channel);
@@ -556,7 +556,7 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 			return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
 		}
 	}
-	if (topicGiven && topic == ":")
+	if (topicGiven && topic == ":" && (targetChannel->isOperator(&client) || !targetChannel->isTopicOperatorOnly()))
 		targetChannel->setTopic("");
 	else
 		targetChannel->setTopic(topic);
