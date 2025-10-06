@@ -170,6 +170,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 void Server::handleSingleMode(Client &client, Channel &channel, const char &operation, char &modeChar,
 	const std::string &modeParam, const std::vector<std::string>& params) {
 
+		(void)params;
 		switch (modeChar) {
 		case 'i':
 			inviteOnlyMode(client, channel, operation);
@@ -187,7 +188,7 @@ void Server::handleSingleMode(Client &client, Channel &channel, const char &oper
 			userLimitMode(client, channel, operation, modeParam);
 			break;
 		default:
-			messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+			messageHandle(ERR_UNKNOWNMODE, client, "MODE", {std::string(1, modeChar)});
 			logMessage(WARNING, "MODE", "Client " + client.getNickname()
 				+ " sent unknown mode character  '" + modeChar + "' on channel " + channel.getName() + ".");
 			break;
@@ -210,7 +211,7 @@ void Server::handleChannelMode(Client& client, Channel &channel, const std::vect
 	if (modeString == "b" || modeString == "+b")
 		return messageHandle(RPL_ENDOFBANLIST, client, channel.getName(), {client.getNickname()});
 	if (modeString.size() < 2 || (modeString[0] != '+' && modeString[0] != '-')) {
-		//messageHandle(ERR_UNKNOWNMODE, client, "MODE", params);
+		messageHandle(ERR_UNKNOWNMODE, client, "MODE", {modeString});
 		logMessage(WARNING, "MODE", "Client '" + client.getNickname()
 			+ "' used unkown mode character" + modeString[0] + " on channel '" + channel.getName() + "'.");
 		return;
@@ -323,7 +324,7 @@ void Server::channelKeyMode(Client& client, Channel& channel, char operation, co
 		return;
 	}
 	if (operation == '+') {
-		if (key.empty()) {
+		if (key.empty() || key == "x") {
 			logMessage(WARNING, "MODE", "Missing key in +k mode on " + channel.getName());
 			return;
 		}

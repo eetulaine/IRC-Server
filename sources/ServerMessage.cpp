@@ -106,6 +106,8 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += paramString;
 	} else if (code == ERR_TOOMANYCHANNELS) {
 		message += paramString;
+	} else if (code == ERR_UNKNOWNMODE) {
+		message += paramString;
 	} else {
 		message += cmd + " " + paramString;
 	}
