@@ -1,11 +1,11 @@
-#include "Channel.hpp"
+#include "../includes/Channel.hpp"
 #include "../includes/macros.hpp"
 #include "../includes/Server.hpp"
 #include "../includes/responseCodes.hpp"
 
 
 Channel::Channel(Client* client, const std::string &name, const std::string& key)
-	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(false), userLimit_(100), topic_("") {
+	: name_(name), key_(""), keyProtected_(false), inviteOnly_(false), topicOperatorOnly_(true), userLimit_(-1), topic_("") {
 
 	if (!key.empty()) {
 		setChannelKey(key);
@@ -30,11 +30,13 @@ std::string Channel::getModeString() {
     if (isInviteOnly())
         modes += "i";
     if (isKeyProtected())
-        modes += "t";
+        modes += "k";
     if (getUserLimit() > 0)
-        modes += "l";
+		modes += "l";
+	if (topicOperatorOnly_)
+		modes += "t";
     if (modes == "+")  // No modes active
-        return "";
+		return "";
     return modes;
 }
 
@@ -60,6 +62,17 @@ void Channel::removeMember(Client *client) {
 		logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> is removed from channel " + this->getName());
  	else
 		logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> not found on channel " + this->getName());
+ }
+
+ void Channel::removeOperator(Client *client) {
+
+	if (isOperator(client)) {
+ 		size_t status =  operators_.erase(client);
+ 		if (status)
+			logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> is removed from channel " + this->getName() + " operator list");
+ 		else
+			logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> not found on channel " + this->getName());
+	}
  }
 
  void Channel::addInvite(Client *client) {
@@ -113,59 +126,44 @@ bool isValidChannelName(const std::string& name) {
 }
 
 bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
-    if (!providedKey.empty() && !isValidChannelKey(providedKey)) {
-        logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
-		+ "' provided an invalid channel key format for channel '" + getName() + "'.");
-        return false;
-    }
-    if (!channel->isKeyProtected())
-        return true;
 
-    if (providedKey.empty()) {
-        logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
+	if (!channel->isKeyProtected())
+		return true;
+	if (!providedKey.empty() && !isValidChannelKey(providedKey)) {
+		logMessage(WARNING, "CHANNEL", "Client '" + client->getNickname()
+		+ ": Invalid channel key. format for channel '" + getName() + "'.");
+		return false;
+	}
+	if (providedKey.empty()) {
+		logMessage(WARNING, "CHANNEL", "Client '" + client->getNickname()
 		+ "' attempted to join key-protected channel '" + getName() + "' without providing a key.");
-        return false;
-    }
+		return false;
+	}
 
-    if (getChannelKey() != providedKey) {
-        logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
+	if (getChannelKey() != providedKey) {
+		logMessage(WARNING, "CHANNEL", "Client '" + client->getNickname()
 		+ "' provided an incorrect key for channel '" + getName() + "'. Join rejected.");
-        return false;
-    }
-    logMessage(INFO, "CHANNEL", "Client '" + client->getNickname() +
+		return false;
+	}
+	logMessage(INFO, "CHANNEL", "Client '" + client->getNickname() +
 	"' successfully joined key-protected channel '" + getName() + "'.");
-    return true;
+	return true;
 }
 
 bool Channel::isOperator(Client* client) const {
 	return operators_.find(client) != operators_.end();
 }
 
-
-/* bool Channel::checkKey(Channel* channel, Client* client, const std::string& providedKey) {
-
-	if (!channel->isKeyProtected())
-		return true;
-	if (providedKey.empty()) {
-		logMessage(ERROR, "CHANNEL",
-			"Key required: " + client->getNickname() + " failed to join");
-		return false;
-	}
-	return true;
-} */
-
-
 bool Channel::checkChannelLimit(Client &client, Channel &channel) {
-    if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
-        return true;
-   	//messageHandle(ERR_CHANNELISFULL, client, "JOIN", {channel.getName(), std::to_string(channel.getUserLimit())});
-    logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
-	"' attempted to join channel '" + channel.getName() + 
-    "', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");
-    return false;
+	if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
+		return true;
+	logMessage(WARNING, "CHANNEL", "Client '" + client.getNickname() +
+	"' attempted to join channel '" + channel.getName() +
+	"', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");
+	return false;
 }
 
-// TOPIC ACCESSORS
+// ACCESSORS
 
 bool Channel::isTopicOperatorOnly() const {
 	return topicOperatorOnly_;
@@ -183,9 +181,14 @@ void Channel::setTopicOperatorOnly(bool topicOperatorOnly) {
 	topicOperatorOnly_ = topicOperatorOnly;
 }
 
-// ACCESSORS
 void Channel::setChannelKey(const std::string& key) {
 	key_ = key;
+}
+
+void Channel::setKeyProtected(bool keyProtected) {
+	if (keyProtected)
+		keyProtected_ = true;
+	keyProtected_ = false;
 }
 
 void Channel::setInviteOnly(bool inviteOnly) {

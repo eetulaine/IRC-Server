@@ -19,4 +19,4 @@
 
 enum logMsgType { INFO, WARNING, ERROR, DEBUG };
 
-#define DEBUG_MODE true
+#define DEBUG_MODE true // change it to false during evaluation

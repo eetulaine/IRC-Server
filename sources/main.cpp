@@ -4,7 +4,6 @@
 #include <regex>
 #include "../includes/Server.hpp"
 #include "../includes/macros.hpp"
-//#include <exception>
 
 bool isPasswordValid(const std::string &password)
 {
@@ -20,15 +19,13 @@ int portValidation(const std::string &_port)
 {
 	int port = std::stoi(static_cast<std::string>(_port));
 
-	// if server only allow one port, need to validation in the above method accordingly
-	if (port < 6665 || port > 6669) // need to check actual port range
+	if (port < 6665 || port > 6669)
 		throw std::runtime_error("Invalid listening port range(try 6665-6669)");
 	return (port);
 }
 
 int main(int argc, char **argv)
 {
-	logMessage(INFO, "MAIN", "Program started");
 	try
 	{
 		if (argc != 3)
@@ -37,7 +34,6 @@ int main(int argc, char **argv)
 		int port = portValidation(argv[1]);
 		if (!isPasswordValid(argv[2]))
 			throw std::runtime_error("Invalid password");
-		logMessage(INFO, "MAIN", "Validation Done");
 		Server ircserv(port, argv[2]);
 		ircserv.startServer();
 	}
@@ -46,6 +42,5 @@ int main(int argc, char **argv)
 		logMessage(ERROR, "MAIN", e.what());
 		return (1);
 	}
-	logMessage(INFO, "MAIN", "Server activity finished");
 	return (0);
 }

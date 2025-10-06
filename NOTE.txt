@@ -1,0 +1,120 @@
+CLIENT Validation??
+	- check password
+	- do authentication check
+	- send welcome msg
+	- print client???
+
+MSG Limit
+- http://chi.cs.uchicago.edu/chirc/irc.html
+
+
+JOIN messsage:
+- 	ERR_NEEDMOREPARAMS              ERR_BANNEDFROMCHAN
+   ERR_INVITEONLYCHAN              ERR_BADCHANNELKEY
+   ERR_CHANNELISFULL               ERR_BADCHANMASK
+   ERR_NOSUCHCHANNEL               ERR_TOOMANYCHANNELS
+   ERR_TOOMANYTARGETS              ERR_UNAVAILRESOURCE
+   RPL_TOPIC
+
+
+connect:
+irssi -c localhost -p 6667 -w qwerty
+
+
+
+/connect liberachat
+ /rawlog log.log
+ /rawlog OPEN log.log
+
+
+JOIN:
+1.client itself also receive join msg
+   15:25 [Users #abc]
+   15:25 [@shachowd_]
+   15:25 -!- Irssi: #abc: Total of 1 nicks [1 ops, 0 halfops, 0 voices, 0 normal]
+2. other
+    shachowd [~shachowd@127.0.0.1] has joined #abc
+3. all: memberlist // RPL_NAMREPLY
+4. all topic // RPL_TOPIC
+
+NICK
+1. self: You're now known as tin
+2. other:  shachowd is now known as tin
+
+TOPIC:
+1. ALL: shachowd_ changed the topic of #abc to: bird  // broadcast
+
+
+
+
+
+ERROR:
+1. after kick unable to join the channel. it says already a member. then when try to send msg it says "Client is not a member of channel: "#abc"
+2. some weird scenarios: in double connect, join, kick combination. need to create it again
+
+ERROR LOG :
+
+/////////////////////////////
+[04.09.2025 17:23:32] [DEBUG][COMMAND] C[KICK], P[0][#abc]
+Member <shachowd> is removed from#abcchannel
+[04.09.2025 17:23:32] [INFO] [KICK] User shachowd kicked from #abc by Nickname1is (reason: bad guy)
+[04.09.2025 17:23:48] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
+[04.09.2025 17:23:48] [WARNING] [CLIENT#abc] Client '~shachowd' is already a member
+[04.09.2025 17:24:12] [DEBUG][COMMAND] C[PRIVMSG], P[0][#abc]
+- #abc
+- hi
+[04.09.2025 17:24:12] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
+[04.09.2025 17:24:45] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
+[04.09.2025 17:24:45] [WARNING] [CLIENT#abc] Client '~shachowd' is already a member
+[04.09.2025 17:24:51] [DEBUG][COMMAND] C[PRIVMSG], P[0][#abc]
+- #abc
+- hi
+[04.09.2025 17:24:51] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
+[04.09.2025 17:25:58] [DEBUG][COMMAND] C[KICK], P[0][#abc]
+[04.09.2025 17:25:58] [ERROR][KICK] User shachowd not found on channel #abc
+
+
+///////////////////////////////////////////
+[04.09.2025 16:43:02] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
+[04.09.2025 16:43:25] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
+[04.09.2025 16:43:25] [WARNING] [CLIENT#abc] Client '~shachowd' is already a member
+[04.09.2025 16:43:28] [DEBUG][COMMAND] C[PRIVMSG], P[0][#abc]
+- #abc
+- hi
+[04.09.2025 16:43:28] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
+[04.09.2025 16:43:41] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
+[04.09.2025 16:43:41] [WARNING] [CLIENT#abc] Client '~shachowd' is already a member
+[04.09.2025 16:43:53] [DEBUG][COMMAND] C[PRIVMSG], P[0][#abc]
+- #abc
+- hi
+[04.09.2025 16:43:53] [ERROR][PRIVMSG] Client is not a member of channel: "#abc"
+
+
+////////////////////////////////
+WHOIS: Client ID: 8
+- shachowd
+[04.09.2025 16:45:51] [DEBUG][COMMAND] C[JOIN], P[0][#abc]
+[04.09.2025 16:45:51] [INFO] [CHANNEL] #abc: Client already_ Joined
+[04.09.2025 16:45:51] [INFO] [CLIENT] already_ joined channel: #abc
+[04.09.2025 16:45:51] [INFO] [CLIENT] Client destroyed. ClientFD[8]
+[04.09.2025 16:45:51] [INFO] [CLIENT] Client destroyed. ClientFD[6]
+[04.09.2025 16:45:51] [INFO] [CLIENT] Client destroyed. ClientFD[5]
+[04.09.2025 16:45:51] [ERROR][MAIN] epoll_ctl() failed for client data receive/send Bad file descriptor
+
+
+
+	// for (const std::string& param : params) {
+	// 	std::cout << "- " << param << std::endl;
+	// }
+
+   // std::cout << "PARAM SIZE: " << params.size() << std::endl;
+   // for (const std::string& param : params) {
+   // 	std::cout << "- " << param << std::endl;
+   // }
+
+
+checklist:
+
+- topic auto set when channel is created
+- limit (-1)
+- mode messaageHandle()  "unkown flag"

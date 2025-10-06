@@ -61,7 +61,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_NOTEXTTOSEND) {
 		message += ":No text to send";
 	} else if (code == ERR_UMODEUNKNOWNFLAG) {
-		message += "Unknown MODE flag";
+		message += ":Unknown MODE flag";
 	} else if (code == ERR_CHANOPRIVSNEEDED) {
 		message += paramString;
 	} else if (code == ERR_NOSUCHCHANNEL) {
@@ -85,7 +85,7 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 	} else if (code == ERR_ERRONEUSUSER) {
 		message += paramString + " :Erroneous format";
 	} else if (code == RPL_TOPIC) {
-		message += cmd + " :" + params[1];
+		message += paramString;
 	} else if (code == RPL_NOTOPIC) {
 		message += cmd + " :No topic is set";
 	} else if (code == RPL_NAMREPLY) {
@@ -94,16 +94,20 @@ std::string	Server::createMessage(int code, Client &client, std::string cmd, con
 		message += paramString;
 	} else if (code == RPL_INVITING) {
 		message += params[0] + " " + cmd;
-	} else if (code == ERR_USERSDONTMATCH){
-		message += cmd + "";         //MODE
-	} else if (code == RPL_CHANNELMODEIS){  //:<server> 324 <nick> <channel> <modes>
+	} else if (code == ERR_USERSDONTMATCH) {
+		message += cmd + "";
+	} else if (code == RPL_CHANNELMODEIS) {
 		message += params[0] + " " + params[1];
 	} else if (code == RPL_ENDOFBANLIST) {
 		message += cmd + " :End of channel ban list";
+	} else if (code == RPL_UMODEIS) {
+		message += paramString;
 	} else if (code == ERR_BADCHANNELKEY) {
-        message += paramString;
-    } else {
-		message += cmd + " " + paramString; // print all arguments
+		message += paramString;
+	} else if (code == ERR_TOOMANYCHANNELS) {
+		message += paramString;
+	} else {
+		message += cmd + " " + paramString;
 	}
 	message += "\r\n";
 
@@ -141,22 +145,21 @@ void Server::messageToClient(Client &targetClient, Client &fromClient, std::stri
 
 void Server::messageToClient(Client &targetClient, Client &fromClient, std::string command, const std::string msgToSend, std::string channelName) {
 
-	// check conditions
 	std::string finalMsg;
 	if (command == "NICK") {
 		finalMsg = msgToSend;
 	}
 	else
 		finalMsg = fromClient.getClientIdentifier() + " " + command + " " + channelName + " " + msgToSend + "\r\n";
-	std::cout << "SEND MSG: ToClient: " << targetClient.getNickname() << " MSG: " << finalMsg << std::endl;
+
 	targetClient.appendSendBuffer(finalMsg);
 }
 
 void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::string command, const std::string msgToSend) {
-	// check conditions
+
 	if (!isClientChannelMember(&targetChannel, fromClient)) {
 		messageHandle(ERR_NOTONCHANNEL, fromClient, command, {msgToSend});
-		logMessage(ERROR, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getName());
+		logMessage(WARNING, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getName());
 		return ;
 	}
 
@@ -180,7 +183,6 @@ void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::s
 
 void Server::messageBroadcast(Client &fromClient, std::string command, const std::string msgToSend)
 {
-
 	std::set<std::string> channels = fromClient.getJoinedChannels();
 	for (const std::string& channelName : channels) {
 		Channel* targetChannel = getChannel(channelName);

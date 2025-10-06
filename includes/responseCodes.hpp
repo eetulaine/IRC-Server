@@ -50,3 +50,5 @@
 #define ERR_UMODEUNKNOWNFLAG	501
 #define ERR_UNKNOWNMODE			472
 #define ERR_USERSDONTMATCH		502
+#define ERR_NOSUCHCHANNEL		403 // no such channel <channel> :<reason>
+#define ERR_TOOMANYCHANNELS		405

@@ -13,7 +13,7 @@ Server::Server(int port, std::string password) : port_(port), password_(password
 	bindSocket();
 	initListen();
 
-	logMessage(INFO, "SERVER", "Server created. PORT[" + std::to_string(port_) + "] PASSWORD[" + password_ + "]");
+	logMessage(INFO, "SERVER", "Server created. PORT: [" + std::to_string(port_) + "] PASSWORD: [" + password_ + "]");
 	customSignals(true);
 	registerCommands();
 }
@@ -27,12 +27,14 @@ void Server::closeServer() {
 	logMessage(INFO, "SERVER", "Server closing [closeServer()]");
 
 	auto it = clients_.begin();
-	while (it != clients_.end()) {
-		if (it->second) {
+	while (it != clients_.end())
+	{
+		if (it->first > 4 && it->second) {
+			auto next = std::next(it);
 			closeClient(*it->second);
-			it = clients_.erase(it);
+			it = next;
 		} else {
-			++it;
+			it++;
 		}
 	}
 	clients_.clear();
@@ -107,8 +109,7 @@ void Server::stop(int signum) {
 }
 
 void Server::startServer() {
-	logMessage(INFO, "SERVER", "Server started. SOCKET[" + std::to_string(serverSocket_) + "]");
-	epollFd = epoll_create1(EPOLL_CLOEXEC); // check later if we need this EPOLL_CLOEXEC flag(1)
+	epollFd = epoll_create1(EPOLL_CLOEXEC);
 
 	if (epollFd < 0) {
 		throw std::runtime_error("epoll fd creating failed");
@@ -123,8 +124,7 @@ void Server::startServer() {
 
 	struct epoll_event epEventList[MAX_EVENTS];
 
-	logMessage(INFO, "SERVER", "Waiting for events. ServerFD[" + std::to_string(epollFd) + "]");
-
+	logMessage(INFO, "SERVER", "Server is running. NAME: [" + serverName_ + "], SERVER_FD: [" + std::to_string(epollFd) + "]");
 	while(true) {
 		int epActiveSockets = epoll_wait(epollFd, epEventList, MAX_EVENTS, 4200); // timeout time?
 
@@ -175,7 +175,6 @@ void Server::processBuffer(Client& client) {
 	size_t pos;
 
 	while ((pos = buf.find("\r\n")) != std::string::npos) {
-		logMessage(DEBUG, "PRINT", "BUFFER: " + buf);
 		std::string line = buf.substr(0, pos);
 		buf.erase(0, pos + 2);
 		std::pair<std::string, std::vector<std::string>> parsed = parseCommand(line);
@@ -183,7 +182,7 @@ void Server::processBuffer(Client& client) {
         std::vector<std::string> params = parsed.second;
 		std::transform(commandStr.begin(), commandStr.end(), commandStr.begin(), ::toupper);
 		logMessage(DEBUG, "COMMAND", "C[" + commandStr + "]");
-		if (commandStr == "QUIT") // we need to check for commands that close the client separately as we don't want to try to access a client (eg. client.setBuffer(buf);)that's already terminated (seg fault..)
+		if (commandStr == "QUIT")
 			return handleQuit(client, params);
 		if ((commandStr == "USER" || commandStr == "PASS" || commandStr == "CAP") && client.isAuthenticated()) {
 			messageHandle(ERR_ALREADYREGISTERED, client, commandStr, params);
@@ -223,28 +222,26 @@ void Server::sendData(int currentFD) {
 }
 
 std::string Server::getClientIP(struct sockaddr_in clientSocAddr) {
-	char clientIP[INET_ADDRSTRLEN]; // if needed convert clientIP to std::string "std::string(clientIP)"
-		 // logging client IP | Do we need to log?? or only IP
+	char clientIP[INET_ADDRSTRLEN];
+	// logging client IP
 	if (!inet_ntop(AF_INET, &clientSocAddr.sin_addr, clientIP, sizeof(clientIP))) {
 		return ("");
 	}
-	//std::cout << "Client IP from GET Method: " << clientIP << std::endl; // remove later***
+
 	return (std::string(clientIP));
 }
 
 void Server::acceptNewClient(int epollFd) {
-	//std::cout << "Inside Accept" << std::endl;
 	struct  sockaddr_in clientSocAddr;
 	socklen_t clientSocLen = sizeof(clientSocAddr);
 
 	int clientFd = accept(serverSocket_, (struct sockaddr*)&clientSocAddr, &clientSocLen);
 	if  (clientFd < 0) {
 		throw std::runtime_error("Client accept() failed");
-		// should exit or return to main/server loop???
+		// should exit or return to main/server loop??? ****
 	}
 	else
 	{
-		//usleep(10000);
 		if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) { // Make client non-blocking
 			close(clientFd);
 			throw std::runtime_error("fcntl() failed for client");
@@ -264,9 +261,8 @@ void Server::acceptNewClient(int epollFd) {
 			close(clientFd);
 			throw std::runtime_error("epoll_ctl() failed for client");
 		}
-		// After succesfull steps here you list(add) your new client std::string clientIP = inet_ntoa(clientSocAddr.sin_addr);
+		// Adding new client
 		clients_[clientFd] = std::make_unique<Client>(clientFd, clientIP, epollFd); // what about client Index 0-3??*****
-		//logMessage(INFO, "CLIENT", "New client accepted. ClientFD [ " + clientFd + " ]");
 	}
 }
 
@@ -312,11 +308,11 @@ std::string Server::getServerName() const {
 bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &str2) {
 	std::string str1Lower = str1;
 	std::transform(str1Lower.begin(), str1Lower.end(), str1Lower.begin(),
-	               [](unsigned char c){ return std::tolower(c); });
+		[](unsigned char c){ return std::tolower(c); });
 
 	std::string str2Lower = str2;
 	std::transform(str2Lower.begin(), str2Lower.end(), str2Lower.begin(),
-	               [](unsigned char c){ return std::tolower(c); });
+		[](unsigned char c){ return std::tolower(c); });
 
 	if (str1Lower == str2Lower)
 	{
@@ -325,18 +321,6 @@ bool Server::stringCompCaseIgnore(const std::string &str1, const std::string &st
 	else
 		return (false);
 }
-
-// **Structured bindings ([fd, client]) were added in C++17, so g++/clang++ complains.
-
-// bool Server::isUserDuplicate(std::string userName) {
-// 	for (auto& [fd, client] : this->clients_) {
-// 		if (client && stringCompCaseIgnore(client->getUsername(), userName))
-// 		{
-// 			return (true); // Duplicate found
-// 		}
-// 	}
-// 	return (false);   //  this exits after first client!
-// }
 
 bool	Server::isNickDuplicate(std::string  nickName) {
 
@@ -367,8 +351,8 @@ bool Server::isClientChannelMember(Channel *channel, Client& client) {
 Client* Server::getClient(const std::string& nickName) {
 	for (auto& [fd, clientPtr] : clients_) {
 		if (clientPtr && stringCompCaseIgnore(clientPtr->getNickname(), nickName)) {
-			return clientPtr.get();  // return raw pointer from unique_ptr
+			return clientPtr.get();
 		}
 	}
-	return nullptr;  // not found
+	return nullptr; // not found
 }
