@@ -65,6 +65,17 @@ void Channel::removeMember(Client *client) {
 		logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> not found on channel " + this->getName());
  }
 
+ void Channel::removeOperator(Client *client) {
+
+	if (isOperator(client)) {
+ 		size_t status =  operators_.erase(client);
+ 		if (status)
+			logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> is removed from channel " + this->getName() + " operator list");
+ 		else
+			logMessage(DEBUG, "CHANNEL", "Member <" + client->getNickname() + "> not found on channel " + this->getName());
+	}
+ }
+
  void Channel::addInvite(Client *client) {
 	invited_.insert(client);
 	logMessage(DEBUG, "CHANNEL", this->getName() +
