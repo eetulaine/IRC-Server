@@ -129,7 +129,7 @@ void Server::handleWhois(Client& client, const std::vector<std::string>& params)
 	}
 
 	if (getClient(nickName) == nullptr) {
-		messageHandle(ERR_NOSUCHNICK, client, "WHOIS", params);
+		messageHandle(ERR_NOSUCHNICK, client, "WHOIS", {nickName});
 		return;
 	}
 	messageHandle(RPL_ENDOFWHOIS, client, "WHOIS", {nickName, ":End of /WHOIS list"});
