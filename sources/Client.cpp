@@ -24,8 +24,7 @@ int Client::receiveData() {
 
 	ssize_t bytesRead = recv(clientFD_, buffer, BUF_SIZE, MSG_DONTWAIT);
 	if (bytesRead > 0) {
-
-	std::string received(buffer, bytesRead);
+		std::string received(buffer, bytesRead);
 		addReadBuffer(received);
 		return SUCCESS;
 	}
