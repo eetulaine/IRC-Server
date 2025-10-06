@@ -516,7 +516,7 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 		return;
 	std::string channel = params[0];
 	bool topicGiven = true;
-	if (params[1].empty()) {
+	if (params.size() < 2 || params[1].empty()) {
 		topicGiven = false;
 	}
 	if (!channelExists(channel)) {
@@ -527,7 +527,8 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 	logMessage(DEBUG, "TOPIC", "CURRENT TOPIC: " + targetChannel->getTopic());
 	if (!topicGiven && targetChannel->getTopic().empty()) { // if topic not given and channel topic has not been set, print "no topic"
 		messageHandle(RPL_NOTOPIC, client, channel, params);
-		return logMessage(WARNING, "TOPIC", "No topic set for channel " + channel);
+		logMessage(WARNING, "TOPIC", "No topic set for channel " + channel);
+		return;
 	}
 	else if (!topicGiven) { // if topic not given as argument and topic is already set for channel, print the topic
 		messageHandle(RPL_TOPIC, client, "JOIN", {targetChannel->getName() + " :" + targetChannel->getTopic()});
@@ -538,7 +539,9 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 		messageHandle(ERR_NOTONCHANNEL, client, channel, params);
 		return logMessage(ERROR, "TOPIC", "User " + client.getNickname() + " not on channel " + channel);
 	}
-	std::string topic = params[1];
+	std::string topic;
+	if (topicGiven)
+		topic = params[1];
 	if (topicGiven && topic.size() > 300) { // truncate overlong topic
 		topic.resize(300);
 	}
@@ -553,7 +556,10 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 			return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
 		}
 	}
-	targetChannel->setTopic(topic);
+	if (topicGiven && topic == ":")
+		targetChannel->setTopic("");
+	else
+		targetChannel->setTopic(topic);
 	messageHandle(RPL_TOPIC, client, "JOIN", {targetChannel->getName() + " :" + targetChannel->getTopic()});
 	messageBroadcast(*targetChannel, client, "TOPIC", topic);
 	logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " set new topic: " + topic + " for channel " + channel);
