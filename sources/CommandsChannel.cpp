@@ -326,6 +326,7 @@ void Server::channelKeyMode(Client& client, Channel& channel, char operation, co
 			return;
 		}
 		channel.setChannelKey(key);
+		channel.setKeyProtected(true);
 		messageBroadcast(channel, client, "MODE", "+k " + key);
 		logMessage(INFO, "MODE", "+k set on " + channel.getName());
 	}
