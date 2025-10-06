@@ -264,7 +264,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 
 void Server::topicRestrictionMode(Client& client, Channel& channel, char operation) {
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {});
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {channel.getName(), ":You're not a channel operator"});
 		return logMessage(ERROR, "MODE", "User not an operator");
 	}
 	if (operation == '+') {
@@ -288,7 +288,7 @@ void Server::topicRestrictionMode(Client& client, Channel& channel, char operati
 
 void Server::operatorMode(Client& client, Channel& channel, char operation, const std::string& user) {
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {});
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {channel.getName(), ":You're not a channel operator"});
 		return logMessage(ERROR, "MODE", "User not an operator");
 	}
 	if (user.empty()) {
@@ -359,7 +359,7 @@ void Server::userLimitMode(Client& client, Channel& channel, char operation, con
 		return logMessage(ERROR, "MODE", "No user limit specified for the channel");
 	}
 	if (!channel.isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {});
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {channel.getName(), ":You're not a channel operator"});
 		return logMessage(ERROR, "MODE", "User does not have operator rights");
 	}
 	int userLimit = 0;
@@ -414,7 +414,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 		return logMessage(ERROR, "KICK", "User " + client.getNickname() + " not on channel " + channel);
 	}
 	if (!targetChannel->isOperator(&client)) { // check whether the user has operator rights on the channel
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, params);
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, {channel, ":You're not a channel operator"});
 		return logMessage(ERROR, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
 	}
 	Client* clientToKick = nullptr;
@@ -473,7 +473,7 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " not on channel " + channelInvitedTo);
 	}
 	if (targetChannel->isInviteOnly() && !targetChannel->isOperator(&client)) {
-		messageHandle(ERR_CHANOPRIVSNEEDED, client, channelInvitedTo, params);
+		messageHandle(ERR_CHANOPRIVSNEEDED, client, channelInvitedTo, {channelInvitedTo, ":You're not a channel operator"});
 		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " does not have operator rights for invite-only channel " + channelInvitedTo);
 	}
 	Client* clientToBeInvited = nullptr;
@@ -549,7 +549,7 @@ void Server::handleTopic(Client& client, const std::vector<std::string>& params)
 	}
 	else if (topicGiven && targetChannel->isTopicOperatorOnly()) { // if topic can be set by operators only (mode +t), either set the topic if user is operator or print error
 		if (!targetChannel->isOperator(&client)) {
-			messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, params);
+			messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, {channel, ":You're not a channel operator"});
 			return logMessage(DEBUG, "TOPIC", "User " + client.getNickname() + " unable to set topic for channel " + channel + " (NOT AN OPERATOR)");
 		}
 	}
