@@ -164,7 +164,7 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 		targetChannel = getChannel(target);
 
 		if (targetChannel == nullptr || (targetChannel && !isClientChannelMember(targetChannel, client))) {
-			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", params);
+			messageHandle(ERR_CANNOTSENDTOCHAN, client, "PRIVMSG", {target});
 			logMessage(WARNING, "PRIVMSG", "No Channel/ client is not a member of channel: \"" + target + "\"");
 			return ;
 		}
@@ -172,7 +172,7 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 	else {
 		targetClient = getClient(target);
 		if (targetClient == nullptr || (targetClient && !targetClient->isAuthenticated())) {
-			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", params);
+			messageHandle(ERR_NOSUCHNICK, client, "PRIVMSG", {target});
 			logMessage(WARNING, "PRIVMSG", "No such nickname: \"" + target + "\"");
 			return ;
 		}
