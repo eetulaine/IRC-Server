@@ -120,18 +120,18 @@ bool Channel::checkKey(Channel* channel, Client* client, const std::string& prov
 	if (!channel->isKeyProtected())
 		return true;
 	if (!providedKey.empty() && !isValidChannelKey(providedKey)) {
-		logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
+		logMessage(WARNING, "CHANNEL", "Client '" + client->getNickname()
 		+ ": Invalid channel key. format for channel '" + getName() + "'.");
 		return false;
 	}
 	if (providedKey.empty()) {
-		logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
+		logMessage(WARNING, "CHANNEL", "Client '" + client->getNickname()
 		+ "' attempted to join key-protected channel '" + getName() + "' without providing a key.");
 		return false;
 	}
 
 	if (getChannelKey() != providedKey) {
-		logMessage(ERROR, "CHANNEL", "Client '" + client->getNickname()
+		logMessage(WARNING, "CHANNEL", "Client '" + client->getNickname()
 		+ "' provided an incorrect key for channel '" + getName() + "'. Join rejected.");
 		return false;
 	}
@@ -147,7 +147,7 @@ bool Channel::isOperator(Client* client) const {
 bool Channel::checkChannelLimit(Client &client, Channel &channel) {
 	if (static_cast<int>(channel.getMembers().size()) < channel.getUserLimit())
 		return true;
-	logMessage(ERROR, "CHANNEL", "Client '" + client.getNickname() +
+	logMessage(WARNING, "CHANNEL", "Client '" + client.getNickname() +
 	"' attempted to join channel '" + channel.getName() +
 	"', but the channel is full (limit: " + std::to_string(channel.getUserLimit()) + ").");
 	return false;
