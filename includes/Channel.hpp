@@ -33,6 +33,7 @@ class Channel {
 		void addChannelMember(Client *client);
 		void addInvite(Client* client);
 		void removeMember(Client *client);
+		void removeOperator(Client *client);
 
 		bool isOperator(Client* client) const;
 		std::string getModeString();
