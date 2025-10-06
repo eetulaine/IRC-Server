@@ -159,7 +159,7 @@ void Server::messageBroadcast(Channel &targetChannel, Client &fromClient, std::s
 
 	if (!isClientChannelMember(&targetChannel, fromClient)) {
 		messageHandle(ERR_NOTONCHANNEL, fromClient, command, {msgToSend});
-		logMessage(ERROR, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getName());
+		logMessage(WARNING, "PRIVMSG", "Cleint: " + fromClient.getNickname() + " not in channel: " + targetChannel.getName());
 		return ;
 	}
 
