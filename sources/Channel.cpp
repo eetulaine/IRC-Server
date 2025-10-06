@@ -11,7 +11,6 @@ Channel::Channel(Client* client, const std::string &name, const std::string& key
 		setChannelKey(key);
 		keyProtected_ = true;
 	}
-
 	logMessage(INFO, "CHANNEL", "New channel created. Name: ["+ this->getName() + "].");
 	setOperator(client, true); // set the client creating the channel as operator by default
 	if (isOperator(client))
