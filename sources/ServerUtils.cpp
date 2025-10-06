@@ -27,6 +27,7 @@ void Server::leaveAllChannels(Client& client) {
 		Channel* channel = getChannel(channelName);
 		if (channel) {
 			channel->removeMember(&client);
+			channel->removeOperator(&client);
 			client.leaveChannel(channelName);
 		}
 	}
