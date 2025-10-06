@@ -126,7 +126,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 		if (targetClient) {
 			if (targetClient->getNickname() != client.getNickname()) {
 				messageHandle(ERR_USERSDONTMATCH, client, "MODE", params);
-				logMessage(ERROR, "MODE", "Client " + client.getNickname()
+				logMessage(WARNING, "MODE", "Client " + client.getNickname()
 				+ "' attempted MODE command for another user '" + targetClient->getNickname() + "'.");
 				return;
 			}
@@ -139,7 +139,7 @@ void Server::handleMode(Client& client, const std::vector<std::string>& params) 
 			}
 			return;
 		} else {
-		messageHandle(ERR_NOSUCHNICK, client,"MODE",params);
+		messageHandle(ERR_NOSUCHNICK, client,"MODE", {target});
 		logMessage(WARNING, "MODE", "Client '" + client.getNickname() +  "' attempted MODE for nonexistent user '" + target + "'.");
 		}
 	}
@@ -196,8 +196,10 @@ void Server::handleSingleMode(Client &client, Channel &channel, const char &oper
 
 bool Server::checkModeParam(const char modeChar, const char operation) {
 
-	if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l' || modeChar == 'o')
+	if ((modeChar == 'k' || modeChar == 'o' || modeChar == 'l')
 		&& operation == '+')
+		return true;
+	if (modeChar == 'o' && operation == '-')
 		return true;
 	return false;
 }
@@ -243,7 +245,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	if (operation == '+') {
 		if (!channel.isInviteOnly()) {
 			channel.setInviteOnly(true);
-			messageBroadcast(channel, client, "MODE", "+i");       // ✅
+			messageBroadcast(channel, client, "MODE", "+i");
 			logMessage(INFO, "MODE", "Invite-only mode enabled on channel [" + channel.getName() + "] by client '"
 			+ client.getNickname() + "'");
 		} else {
@@ -253,7 +255,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 	} else if (operation == '-') {
 		if (channel.isInviteOnly()) {
 			channel.setInviteOnly(false);
-			messageBroadcast(channel, client, "MODE", "-i");      // ✅
+			messageBroadcast(channel, client, "MODE", "-i");
 			logMessage(INFO, "MODE", "Client '" + client.getNickname() + "' disabled invite-only mode on channel '"
 			+ channel.getName() + "'");
 		} else {
@@ -265,7 +267,7 @@ void Server::inviteOnlyMode(Client& client, Channel& channel, char operation) {
 void Server::topicRestrictionMode(Client& client, Channel& channel, char operation) {
 	if (!channel.isOperator(&client)) {
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {channel.getName(), ":You're not a channel operator"});
-		return logMessage(ERROR, "MODE", "User not an operator");
+		return logMessage(WARNING, "MODE", "User not an operator");
 	}
 	if (operation == '+') {
 		if (!channel.isTopicOperatorOnly()) {
@@ -289,7 +291,7 @@ void Server::topicRestrictionMode(Client& client, Channel& channel, char operati
 void Server::operatorMode(Client& client, Channel& channel, char operation, const std::string& user) {
 	if (!channel.isOperator(&client)) {
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {channel.getName(), ":You're not a channel operator"});
-		return logMessage(ERROR, "MODE", "User not an operator");
+		return logMessage(WARNING, "MODE", "User not an operator");
 	}
 	if (user.empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "MODE", {});
@@ -326,6 +328,7 @@ void Server::channelKeyMode(Client& client, Channel& channel, char operation, co
 			return;
 		}
 		channel.setChannelKey(key);
+		channel.setKeyProtected(true);
 		messageBroadcast(channel, client, "MODE", "+k " + key);
 		logMessage(INFO, "MODE", "+k set on " + channel.getName());
 	}
@@ -360,7 +363,7 @@ void Server::userLimitMode(Client& client, Channel& channel, char operation, con
 	}
 	if (!channel.isOperator(&client)) {
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel.getName(), {channel.getName(), ":You're not a channel operator"});
-		return logMessage(ERROR, "MODE", "User does not have operator rights");
+		return logMessage(WARNING, "MODE", "User does not have operator rights");
 	}
 	int userLimit = 0;
 	if (!isValidUserLimit(userLimitStr, userLimit))
@@ -405,7 +408,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 	auto it = channelMap_.find(channel);
 	if (it == channelMap_.end()) {
 		messageHandle(ERR_NOSUCHCHANNEL, client, channel, params);
-		return logMessage(ERROR, "KICK", "Channel " + channel + " does not exist");
+		return logMessage(WARNING, "KICK", "Channel " + channel + " does not exist");
 	}
 	Channel* targetChannel = it->second;
 	const std::set<Client*>& members = targetChannel->getMembers();
@@ -415,7 +418,7 @@ void Server::handleKick(Client& client, const std::vector<std::string>& params) 
 	}
 	if (!targetChannel->isOperator(&client)) { // check whether the user has operator rights on the channel
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, channel, {channel, ":You're not a channel operator"});
-		return logMessage(ERROR, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
+		return logMessage(WARNING, "KICK", "User " + client.getNickname() + " doesn't have operator rights on channel " + channel);
 	}
 	Client* clientToKick = nullptr;
 	for (Client* member : members) {
@@ -474,7 +477,7 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 	}
 	if (targetChannel->isInviteOnly() && !targetChannel->isOperator(&client)) {
 		messageHandle(ERR_CHANOPRIVSNEEDED, client, channelInvitedTo, {channelInvitedTo, ":You're not a channel operator"});
-		return logMessage(ERROR, "INVITE", "User " + client.getNickname() + " does not have operator rights for invite-only channel " + channelInvitedTo);
+		return logMessage(WARNING, "INVITE", "User " + client.getNickname() + " does not have operator rights for invite-only channel " + channelInvitedTo);
 	}
 	Client* clientToBeInvited = nullptr;
 	for (auto& pair : clients_) {
@@ -484,7 +487,7 @@ void Server::handleInvite(Client& client, const std::vector<std::string>& params
 		}
 	}
 	if (clientToBeInvited == nullptr) {
-		messageHandle(ERR_NOSUCHNICK, client, "INVITE", params);
+		messageHandle(ERR_NOSUCHNICK, client, "INVITE", {userToBeInvited});
 		return logMessage(WARNING, "INVITE", "User " + userToBeInvited + " does not exist");
 	}
 	if (targetChannel->isMember(clientToBeInvited)) { // user to be invited already a member of the channel
