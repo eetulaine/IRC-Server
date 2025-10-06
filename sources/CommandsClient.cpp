@@ -6,12 +6,12 @@ void Server::handlePass(Client& client, const std::vector<std::string>& params) 
 
 	if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "PASS", params);
-		logMessage(ERROR, "PASS", "Empty password");
+		logMessage(WARNING, "PASS", "Empty password");
 		return;
 	}
 	else if (params[0] != this->getPassword()) {
 		messageHandle(ERR_PASSWDMISMATCH, client, "PASS", params);
-		logMessage(ERROR, "PASS", "Password mismatch. Given Password: " + params[0]);
+		logMessage(WARNING, "PASS", "Password mismatch. Given Password: " + params[0]);
 		return;
 	}
 	else if (client.getIsAuthenticated()) {
@@ -29,26 +29,26 @@ int Server::handleNickParams(Client& client, const std::vector<std::string>& par
 
 	if (!client.getIsPassValid()) {
 		messageHandle(ERR_PASSWDMISMATCH, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Password is not set yet" + params[0]);
+		logMessage(WARNING, "NICK", "Password is not set yet" + params[0]);
 		return (FAIL);
 	}
 	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NONICKNAMEGIVEN, client, "NICK", params);
-		logMessage(ERROR, "NICK", "No nickname given. Client FD: " + std::to_string(client.getClientFD()));
+		logMessage(WARNING, "NICK", "No nickname given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
 	else if (params.size() > 1) {
 		messageHandle(ERR_ERRONEUSNICKNAME, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Invalid nickname format. Given Nickname: " + params[0]);
+		logMessage(WARNING, "NICK", "Invalid nickname format. Given Nickname: " + params[0]);
 		return (FAIL);
 	}
 	else if (!isNickUserValid("NICK", params[0])) {
 		messageHandle(ERR_ERRONEUSNICKNAME, client, "NICK", params);
-		logMessage(ERROR, "NICK", "Invalid nickname format. Given Nickname: " + params[0]);
+		logMessage(WARNING, "NICK", "Invalid nickname format. Given Nickname: " + params[0]);
 		return (FAIL);
 	}
 	else if (client.getNickname() == params[0]) {
-		logMessage(ERROR, "NICK", "Nickname is same as current one. Given Nickname: " + params[0]);
+		logMessage(WARNING, "NICK", "Nickname is same as current one. Given Nickname: " + params[0]);
 		return (FAIL);
 	}
 	else if (isNickDuplicate(params[0])) {
@@ -86,27 +86,27 @@ int Server::handleUserParams(Client& client, const std::vector<std::string>& par
 
 	if (!client.getIsPassValid()) {
 		messageHandle(ERR_PASSWDMISMATCH, client, "USER", params);
-		logMessage(ERROR, "USER", "Password is not set yet" + params[0]);
+		logMessage(WARNING, "USER", "Password is not set yet" + params[0]);
 		return (FAIL);
 	}
 	else if (params.empty() || params[0].empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
-		logMessage(ERROR, "USER", "No username given. Client FD: " + std::to_string(client.getClientFD()));
+		logMessage(WARNING, "USER", "No username given. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
 	else if (params.size() != 4) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
-		logMessage(ERROR, "USER", "Not enough parameters. Client FD: " + std::to_string(client.getClientFD()));
+		logMessage(WARNING, "USER", "Not enough parameters. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
 	else if (params[3].empty()) {
 		messageHandle(ERR_NEEDMOREPARAMS, client, "USER", params);
-		logMessage(ERROR, "USER", "Empty realname. Client FD: " + std::to_string(client.getClientFD()));
+		logMessage(WARNING, "USER", "Empty realname. Client FD: " + std::to_string(client.getClientFD()));
 		return (FAIL);
 	}
 	else if (!isNickUserValid("USER", params[0])) {
 		messageHandle(ERR_ERRONEUSUSER, client, "NICK", params);
-		logMessage(ERROR, "USER", "Invalid username format. Given Username: " + params[0]);
+		logMessage(WARNING, "USER", "Invalid username format. Given Username: " + params[0]);
 		return (FAIL);
 	}
 	return (SUCCESS);
@@ -195,10 +195,10 @@ void Server::handlePrivMsg(Client& client, const std::vector<std::string>& param
 
 	if (isChannel) {
 		messageBroadcast(*targetChannel, client, "PRIVMSG", msgToSend);
-		logMessage(INFO, "PRIVMSG", "Sending msg to Channel: " + targetChannel->getName());
+		logMessage(DEBUG, "PRIVMSG", "Sending msg to Channel: " + targetChannel->getName());
 	}
 	else {
 		messageToClient(*targetClient, client, "PRIVMSG", msgToSend);
-		logMessage(INFO, "PRIVMSG", "Sending Msg to client: " + targetClient->getNickname());
+		logMessage(DEBUG, "PRIVMSG", "Sending Msg to client: " + targetClient->getNickname());
 	}
 }
