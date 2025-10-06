@@ -187,9 +187,7 @@ void Channel::setChannelKey(const std::string& key) {
 }
 
 void Channel::setKeyProtected(bool keyProtected) {
-	if (keyProtected)
-		keyProtected_ = true;
-	keyProtected_ = false;
+	keyProtected_ = keyProtected;
 }
 
 void Channel::setInviteOnly(bool inviteOnly) {
