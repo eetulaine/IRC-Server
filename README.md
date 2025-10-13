@@ -9,14 +9,8 @@ This project focuses on:
 - Parsing and processing text-based commands
 - Real-time communication between multiple clients
 
-
-
-
 ### ⏳ Project Status
-LOADING.......(75%)
-
-
-
+Completed
 
 ### 🤝 Contributors
 [Eetu](https://github.com/eetulaine)
