@@ -37,6 +37,44 @@ ft_irc is a custom IRC (Internet Relay Chat) server written in C++ as part of th
 
  - Clean, informative, and color-coded server activity log for easier monitoring and debugging.
 
+## 🚀 Try It Yourself
+
+You don’t need to clone or build the project — the IRC server is already live on cloud!
+Just connect using IRC client([Irssi](https://irssi.org/)).
+
+#### IRSSI Setup
+macOS:
+```
+brew install irssi
+```
+
+Linux:
+```
+sudo apt install irssi
+```
+#### Server Information
+|         |            |
+| ------------ | --------------- |
+| **Server**   | `shahnajsc.com` |
+| **Port**     | `6667`          |
+| **Password** | `abcdef`        |
+
+#### Connect to the Server
+```
+irssi
+/connect shahnajsc.com 6667 abcdef
+```
+#### Few Commands
+| Command                          | Description                 |
+| -------------------------------- | --------------------------- |
+| `/join #channelName`             | Join or create a channel    |
+| `/nick newNickname`              | Change your nickname        |
+| `/msg nickname :message`         | Send a private message      |
+| `/msg #channelName :message`     | Send a message to a channel |
+| `/topic #channelName :new topic` | Change a channel topic      |
+
+
+
 ## ⏳ Project Status
 Submission and peer evaluation is done.
 
