@@ -38,7 +38,7 @@ ft_irc is a custom IRC (Internet Relay Chat) server written in C++ as part of th
  - Clean, informative, and color-coded server activity log for easier monitoring and debugging.
 
 ## ⏳ Project Status
-Completed
+Submission and peer evaluation is done.
 
 ## 🤝 Contributors
 [Eetu](https://github.com/eetulaine)
@@ -47,5 +47,3 @@ Completed
 
 [Shahnaj](https://github.com/shahnajsc)
 
-## Project Status
-Submission and peer evaluation is done.
